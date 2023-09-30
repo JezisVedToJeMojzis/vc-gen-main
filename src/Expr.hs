@@ -62,7 +62,18 @@ class Subable s where
   subst :: Eq a => a -> Expr a -> s a -> s a
 
 instance Subable Expr where
-  subst = undefined
+  subst var expr = go
+    where
+      go (Var v)
+        | v == var  = expr
+        | otherwise = Var v
+      go (Array a)
+        | a == var  = expr
+        | otherwise = Array a
+      go (Const n) = Const n
+      go (BinOp op lhs rhs) = BinOp op (go lhs) (go rhs)
+      go (Select array index) = Select (go array) (go index)
+      go (Store array index val) = Store (go array) (go index) (go val)
   
 instance Subable Pred where
   subst = undefined
