@@ -67,9 +67,9 @@ instance Subable Expr where
       substExpr (Var v) = if v == var then expr else Var v 
       substExpr (Array a) = if a == var then expr else Array a 
       substExpr (Const n) = Const n -- return original const
-      substExpr (BinOp operation lhs rhs) = BinOp operation (go lhs) (go rhs) 
-      substExpr (Select array index) = Select (go array) (go index)
-      substExpr (Store array index val) = Store (go array) (go index) (go val)
+      substExpr (BinOp operation lhs rhs) = BinOp operation (substExpr lhs) (substExpr rhs) 
+      substExpr (Select array index) = Select (substExpr array) (substExpr index)
+      substExpr (Store array index val) = Store (substExpr array) (substExpr index) (substExpr val)
   
 instance Subable Pred where
   subst var expr pred = case pred of

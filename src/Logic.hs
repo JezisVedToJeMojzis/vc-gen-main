@@ -80,4 +80,16 @@ instance Vars Logic where
     Forall x l -> Set.union (vars l) (vars $ Var x)
 
 instance Subable Logic where
-  subst = undefined
+  subst var expr = substExpr
+    where
+      substExpr (Pred p) = Pred (subst var expr p) -- subst in predicate
+      substExpr (Neg l) = Neg (substExpr l) -- subst in negation
+      substExpr (And l) = And (map substExpr l) -- subst in mapped list
+      substExpr (Forall x l) = if x == var then Forall x l else Forall x (substExpr l) 
+    
+
+
+    
+
+    
+
