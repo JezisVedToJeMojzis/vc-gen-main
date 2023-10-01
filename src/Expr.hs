@@ -62,18 +62,22 @@ class Subable s where
   subst :: Eq a => a -> Expr a -> s a -> s a
 
 instance Subable Expr where
-  subst var expr = go
+  subst var expr = substExpr -- substitute var with expr
     where
-      go (Var v)
-        | v == var  = expr
-        | otherwise = Var v
-      go (Array a)
-        | a == var  = expr
-        | otherwise = Array a
-      go (Const n) = Const n
-      go (BinOp op lhs rhs) = BinOp op (go lhs) (go rhs)
-      go (Select array index) = Select (go array) (go index)
-      go (Store array index val) = Store (go array) (go index) (go val)
+      substExpr (Var v) = if v == var then expr else Var v 
+      substExpr (Array a) = if a == var then expr else Array a 
+      substExpr (Const n) = Const n -- return original const
+      substExpr (BinOp operation lhs rhs) = BinOp operation (go lhs) (go rhs) 
+      substExpr (Select array index) = Select (go array) (go index)
+      substExpr (Store array index val) = Store (go array) (go index) (go val)
   
 instance Subable Pred where
-  subst = undefined
+  subst var expr pred = case pred of
+    (lhs :==: rhs) -> (substVarWithExpr (:==:) lhs rhs) 
+    (lhs :>=: rhs) -> (substVarWithExpr (:>=:) lhs rhs)
+    (lhs :<=: rhs) -> (substVarWithExpr (:<=:) lhs rhs)
+    where
+      substVarWithExpr operation lhs rhs = -- substitutes variables in the operation with expr for both lhs and rhs
+        let lhs' = subst var expr lhs
+            rhs' = subst var expr rhs
+        in (lhs' `operation` rhs') -- applying operation to new lhs and rhs
