@@ -161,17 +161,27 @@ expr (Variable x) = return (Var x)
 expr (Int i) = return (Const (fromIntegral i))
 
 expr (InfixExpr lhs op rhs) = do
-  left <- expr lhs
-  right <- expr rhs
+  lhs' <- expr lhs
+  rhs' <- expr rhs
   case op of
-    JS.OpAdd -> return (BinOp Add left right) 
-    JS.OpSub -> return (BinOp Sub left right)  
-    JS.OpMul -> return (BinOp Mul left right)  
-    JS.OpDiv -> return (BinOp Div left right)  
-    JS.OpMod -> return (BinOp Mod left right)  
+    JS.OpAdd -> return (BinOp Add lhs' rhs')  
+    JS.OpMul -> return (BinOp Mul lhs' rhs')  
+    JS.OpDiv -> return (BinOp Div lhs' rhs')  
+    JS.OpMod -> return (BinOp Mod lhs' rhs')  
+    JS.OpSub -> return (BinOp Sub lhs' rhs')
     _ -> empty
 
-expr _ = empty 
+expr (Minus e) = do -- for e.g. -3
+   e' <- expr e
+   return  (BinOp Sub (Const 0) e')
+
+expr (JS.BracketRef _ (JS.VarRef _ (JS.Id _ array)) index) = do -- for arrays e.g. x[i]
+  array' <- return (Array array)
+  index' <- expr index
+  return (Select array' index')
+
+expr _ = empty
+
 
 -- | You can use this to pattern match on a variable.
 -- For more info on this, search for the PatternSynonyms language pragma.
