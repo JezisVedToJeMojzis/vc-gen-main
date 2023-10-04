@@ -119,7 +119,33 @@ logic = undefined
 -- Notice how we return Logic here, this is because we express some of the
 -- operations via a negation of a predicate.
 predicate :: MonadNano String m => JS.Expression a -> m (Logic String)
-predicate = undefined
+predicate (JS.InfixExpr _ op lhs rhs) = case op of
+  JS.OpEq -> do -- ==
+    lhs' <- expr lhs
+    rhs' <- expr rhs
+    return $ Pred (lhs' :==: rhs')  
+  JS.OpNEq -> do -- !=
+    lhs' <- expr lhs
+    rhs' <- expr rhs
+    return $ Neg (Pred (lhs' :==: rhs'))  
+  JS.OpLT -> do -- <
+    lhs' <- expr lhs
+    rhs' <- expr rhs
+    return $ Pred (lhs' :<=: rhs')
+  JS.OpLEq -> do -- <=
+    lhs' <- expr lhs
+    rhs' <- expr rhs
+    return $ Pred (lhs' :<=: rhs')
+  JS.OpGT -> do -- >
+    lhs' <- expr lhs
+    rhs' <- expr rhs
+    return $ Neg (Pred (lhs' :<=: rhs'))
+  JS.OpGEq -> do -- >=
+    lhs' <- expr lhs
+    rhs' <- expr rhs
+    return $ Pred (lhs' :>=: rhs')
+  _ -> empty
+predicate _ = empty
 
 -- | Converts JS into Nano expressions of type Int
 --
