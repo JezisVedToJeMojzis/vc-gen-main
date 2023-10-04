@@ -108,8 +108,13 @@ addModifies x = modify (mempty { modifies = [x] } <>)
 --   first a variable) into its respective quantifier. 
 --   Hint: check 'CallExpr'
 -- - Remaining expressions should become predicates (if possible)
+multipleLAnds :: Logic String -> Bool
+multipleLAnds (And _) = True
+multipleLAnds _ = False
+
 logic :: MonadNano String m => JS.Expression a -> m (Logic String)
-logic (JS.PrefixExpr _ JS.PrefixLNot (JS.BoolLit _ b)) = return $ if b then false else true
+logic (JS.PrefixExpr _ JS.PrefixLNot (JS.BoolLit _ b)) = return $ if b then false else true -- negated bool
+logic (JS.BoolLit _ b) = return $ if b then true else false -- not negated bool
 
 logic (JS.PrefixExpr _ JS.PrefixLNot expr) = do
   expr' <- logic expr
@@ -119,7 +124,9 @@ logic (JS.InfixExpr _ op lhs rhs) = case op of
   JS.OpLAnd -> do -- &&
     lhs' <- logic lhs
     rhs' <- logic rhs
-    return $ lhs' <> rhs'
+    return $ if multipleLAnds (lhs' <> rhs') -- check for ands
+      then and [lhs', rhs']  -- multiple &&
+      else lhs' <> rhs' -- just one &&
   JS.OpLOr -> do -- ||
     lhs' <- logic lhs
     rhs' <- logic rhs
@@ -141,7 +148,7 @@ logic (JS.InfixExpr _ op lhs rhs) = case op of
     rhs' <- expr rhs
     return $ Pred (lhs' :<=: rhs')
   _ -> empty
-  
+
 logic _ = empty  -- Other cases are not supported yet
 
 
