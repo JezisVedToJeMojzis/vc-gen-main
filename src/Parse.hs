@@ -109,7 +109,41 @@ addModifies x = modify (mempty { modifies = [x] } <>)
 --   Hint: check 'CallExpr'
 -- - Remaining expressions should become predicates (if possible)
 logic :: MonadNano String m => JS.Expression a -> m (Logic String)
-logic = undefined
+logic (JS.PrefixExpr _ JS.PrefixLNot (JS.BoolLit _ b)) = return $ if b then false else true
+
+logic (JS.PrefixExpr _ JS.PrefixLNot expr) = do
+  expr' <- logic expr
+  return $ neg expr'
+
+logic (JS.InfixExpr _ op lhs rhs) = case op of
+  JS.OpLAnd -> do -- &&
+    lhs' <- logic lhs
+    rhs' <- logic rhs
+    return $ lhs' <> rhs'
+  JS.OpLOr -> do -- ||
+    lhs' <- logic lhs
+    rhs' <- logic rhs
+    return $ or [lhs', rhs']
+  JS.OpGEq -> do -- >=
+    lhs' <- expr lhs
+    rhs' <- expr rhs
+    return $ Pred (lhs' :>=: rhs')
+  JS.OpEq -> do -- ==
+    lhs' <- expr lhs
+    rhs' <- expr rhs
+    return $ Pred (lhs' :==: rhs')
+  JS.OpNEq -> do -- !=
+    lhs' <- expr lhs
+    rhs' <- expr rhs
+    return $ Neg (Pred (lhs' :==: rhs'))
+  JS.OpLEq -> do -- <=
+    lhs' <- expr lhs
+    rhs' <- expr rhs
+    return $ Pred (lhs' :<=: rhs')
+  _ -> empty
+  
+logic _ = empty  -- Other cases are not supported yet
+
 
 -- | Converts JS into Nano expressions of type Bool
 --
@@ -186,7 +220,7 @@ expr :: MonadNano String m => JS.Expression a -> m (Expr String)
 expr (Variable x) = return (Var x) 
 expr (Int i) = return (Const (fromIntegral i))
 
-expr (InfixExpr lhs op rhs) = do
+expr (InfixExpr lhs op rhs) = do -- for operations
   lhs' <- expr lhs
   rhs' <- expr rhs
   case op of
