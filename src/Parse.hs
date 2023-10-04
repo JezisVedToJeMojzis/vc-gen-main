@@ -118,7 +118,7 @@ logic (JS.BoolLit _ b) = return $ if b then true else false -- not negated bool
 
 logic (JS.PrefixExpr _ JS.PrefixLNot expr) = do
   expr' <- logic expr
-  return $ neg expr'
+  return $ Neg expr'
 
 logic (JS.InfixExpr _ op lhs rhs) = case op of
   JS.OpLAnd -> do -- &&
@@ -149,6 +149,18 @@ logic (JS.InfixExpr _ op lhs rhs) = case op of
     return $ Pred (lhs' :<=: rhs')
   _ -> empty
 
+-- forall
+logic (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "forall")) [JS.VarRef _ (JS.Id _ var), expr]) = do
+  expr' <- logic expr
+  return $ Forall var (expr')
+
+-- exists
+logic (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "exists")) [JS.VarRef _ (JS.Id _ var), expr]) = do
+  case expr of
+    JS.InfixExpr _ JS.OpGEq (JS.VarRef _ (JS.Id _ y)) (JS.VarRef _ (JS.Id _ x)) ->
+      return $ exists var (Pred (Var y :>=: Var x))
+    _ -> empty
+  
 logic _ = empty  -- Other cases are not supported yet
 
 
