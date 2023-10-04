@@ -116,10 +116,6 @@ logic :: MonadNano String m => JS.Expression a -> m (Logic String)
 logic (JS.PrefixExpr _ JS.PrefixLNot (JS.BoolLit _ b)) = return $ if b then false else true -- negated bool
 logic (JS.BoolLit _ b) = return $ if b then true else false -- not negated bool
 
-logic (JS.PrefixExpr _ JS.PrefixLNot expr) = do
-  expr' <- logic expr
-  return $ Neg expr'
-
 logic (JS.InfixExpr _ op lhs rhs) = case op of
   JS.OpLAnd -> do -- &&
     lhs' <- logic lhs
@@ -155,11 +151,8 @@ logic (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "forall")) [JS.VarRef _ (JS.Id _ var)
   return $ Forall var (expr')
 
 -- exists
-logic (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "exists")) [JS.VarRef _ (JS.Id _ var), expr]) = do
-  case expr of
-    JS.InfixExpr _ JS.OpGEq (JS.VarRef _ (JS.Id _ y)) (JS.VarRef _ (JS.Id _ x)) ->
-      return $ exists var (Pred (Var y :>=: Var x))
-    _ -> empty
+logic (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "exists")) [JS.VarRef _ (JS.Id _ var), JS.InfixExpr _ JS.OpGEq (JS.VarRef _ (JS.Id _ y)) (JS.VarRef _ (JS.Id _ x))]) =
+  return $ exists var (Pred (Var y :>=: Var x))
   
 logic _ = empty  -- Other cases are not supported yet
 
