@@ -110,9 +110,9 @@ statement (JS.IfStmt _ stmt true false) = do -- if statement with both true and 
 
 -- While statement
 statement (JS.WhileStmt _ expr stmt) = do  -- WhileStmt a (Expression a) (Statement a) // while (e) do stmt, spec 12.6
-  expr' <- logic expr -- parsed condition
-  stmt' <- statement stmt -- nano stmt
-  return $ While expr' expr' stmt' -- condition , invariant , body
+  expr' <- logic expr
+  (stmt', inv) <- scopeInv (statement stmt)  -- handle inv
+  return $ While expr' inv stmt'
 
   -- Assume
 statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "assume")) [stmt])) = do -- ExprStmt a (Expression a) // expr;, spec 12.4
