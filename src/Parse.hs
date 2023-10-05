@@ -70,8 +70,67 @@ function _ = empty
 -- - While statement (check `scopeInv`)
 -- - Specialise function with the names "assume", "assert", "invariant", 
 --   "requires" and "ensures". To perform appropriate actions.
+
+helpWDecl :: MonadNano String m => JS.VarDecl a -> m (Statement String)
+helpWDecl (JS.VarDecl _ (JS.Id _ var) (Just rhs)) = do
+  rhs' <- expr rhs -- if rhs is valid it parses it to nano
+  return $ Assign var rhs' -- rhs is assigned to var name
+helpWDecl _ = return $ skip -- else Seq [] (empty sequence of stmts)
+
 statement :: MonadNano String m => JS.Statement a -> m (Statement String)
-statement = undefined
+-- EmptyStmt a
+statement (JS.EmptyStmt _) = return (skip)  -- Empty statement (skip = Seq [] = empty sequence of statements)
+
+-- Return
+statement (JS.ReturnStmt _ (Just expression)) = do -- ReturnStmt a (Maybe (Expression a)) // return expr;, spec 12.9
+  expr' <- expr expression  -- parsing js expr into nano expr
+  return $ Return expr'  -- nano return
+
+-- Assignment
+statement (JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.LVar _ var) rhs)) = do
+  rhs' <- expr rhs  -- parse rhs into nano
+  return $ Assign var rhs'  -- rhs is assigned to var name
+
+-- Variable declaration
+statement (JS.VarDeclStmt _ declarations) = do -- VarDeclStmt a [VarDecl a]	// var x, y=42;, spec 12.2
+  statements <- mapM helpWDecl declarations -- apply helpWDecl fun to each decl
+  return $ Seq statements 
+
+-- Block statement
+statement (JS.BlockStmt _ stmts) = do -- block of statements {} // BlockStmt a [Statement a] // {stmts}, spec 12.1
+  stmts' <- mapM statement stmts -- mapping statement to each statement in stmts (getting nano statements)
+  return $ Seq stmts' -- combining and returning the statements as nano block 
+
+-- If statement
+statement (JS.IfStmt _ stmt true false) = do -- if statement with both true and false conditions (whole body) // IfStmt a (Expression a) (Statement a) (Statement a) // if (e) stmt, spec 12.5
+  stmt' <- logic stmt -- converting js into nano
+  true' <- statement true -- recursion to convert body of true into nano
+  false' <- statement false -- recursion to convert body of false into nano
+  return $ If stmt' true' false' -- returns nano if wwith its true and false conditions
+
+-- While statement
+statement (JS.WhileStmt _ expr stmt) = do  -- WhileStmt a (Expression a) (Statement a) // while (e) do stmt, spec 12.6
+  expr' <- logic expr -- parsed condition
+  stmt' <- statement stmt -- nano stmt
+  return $ While expr' expr' stmt' -- condition , invariant , body
+
+  -- Assume
+statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "assume")) [stmt])) = do -- ExprStmt a (Expression a) // expr;, spec 12.4
+  stmt' <- logic stmt -- parsed stmt
+  return $ Assume stmt'  -- nano assume
+
+-- Assert
+statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "assert")) [stmt])) = do 
+  stmt' <- logic stmt  -- parsed stmt
+  return $ Assert stmt' -- nano assume 
+
+-- Invariant
+statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "invariant")) [stmt])) = do
+  stmt' <- logic stmt  -- parse stmt
+  addInvariant stmt'  
+  return $ skip -- Seq []
+
+statement _ = empty 
 
 -- | Helper function to scope invariant fetching to a block.
 scopeInv :: MonadNano String m => m a -> m (a, Logic String)
