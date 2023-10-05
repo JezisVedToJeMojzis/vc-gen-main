@@ -85,7 +85,7 @@ instance Subable Logic where
       substExpr (Pred p) = Pred (subst var expr p) -- subst in predicate
       substExpr (Neg l) = Neg (substExpr l) -- subst in negation
       substExpr (And l) = And (map substExpr l) -- subst in mapped list
-      substExpr (Forall x l) = if x == var then Forall x l else Forall x (substExpr l) 
+      substExpr (Forall x l) = Forall x (substExpr l) 
     
 
 
