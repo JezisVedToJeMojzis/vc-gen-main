@@ -122,7 +122,7 @@ statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "assume")) [stmt])
 -- Assert
 statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "assert")) [stmt])) = do 
   stmt' <- logic stmt  -- parsed stmt
-  return $ Assert stmt' -- nano assume 
+  return $ Assert stmt' -- nano assert 
 
 -- Invariant
 statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "invariant")) [stmt])) = do
@@ -206,14 +206,14 @@ logic (JS.InfixExpr _ op lhs rhs) = case op of
 
 -- forall
 logic (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "forall")) [JS.VarRef _ (JS.Id _ var), expr]) = do
-  expr' <- logic expr
+  expr' <- logic expr -- parse 
   return $ Forall var (expr')
 
 -- exists
 logic (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "exists")) [JS.VarRef _ (JS.Id _ var), JS.InfixExpr _ JS.OpGEq (JS.VarRef _ (JS.Id _ y)) (JS.VarRef _ (JS.Id _ x))]) =
   return $ exists var (Pred (Var y :>=: Var x))
   
-logic _ = empty  -- Other cases are not supported yet
+logic _ = empty  
 
 
 -- | Converts JS into Nano expressions of type Bool
@@ -226,9 +226,9 @@ logic _ = empty  -- Other cases are not supported yet
 predicate :: MonadNano String m => JS.Expression a -> m (Logic String)
 predicate (JS.InfixExpr _ op lhs rhs) = case op of
   JS.OpEq -> do -- ==
-    lhs' <- expr lhs
+    lhs' <- expr lhs -- convert js into nano
     rhs' <- expr rhs
-    return $ Pred (lhs' :==: rhs')  
+    return $ Pred (lhs' :==: rhs')  -- return nano in needed "format"
   JS.OpNEq -> do -- !=
     lhs' <- expr lhs
     rhs' <- expr rhs
@@ -250,6 +250,7 @@ predicate (JS.InfixExpr _ op lhs rhs) = case op of
     rhs' <- expr rhs
     return $ Pred (lhs' :>=: rhs')
   _ -> empty
+
 predicate _ = empty
 
 -- | Converts JS into Nano expressions of type Int
@@ -288,8 +289,8 @@ predicate _ = empty
 -- the culprit expression.
 
 expr :: MonadNano String m => JS.Expression a -> m (Expr String)
-expr (Variable x) = return (Var x) 
-expr (Int i) = return (Const (fromIntegral i))
+expr (Variable x) = return (Var x) -- js var into nano
+expr (Int i) = return (Const (fromIntegral i)) -- js integer into nano
 
 expr (InfixExpr lhs op rhs) = do -- for operations
   lhs' <- expr lhs
@@ -302,14 +303,15 @@ expr (InfixExpr lhs op rhs) = do -- for operations
     JS.OpSub -> return (BinOp Sub lhs' rhs')
     _ -> empty
 
+-- unary minus
 expr (Minus e) = do -- for e.g. -3
-   e' <- expr e
-   return  (BinOp Sub (Const 0) e')
+   e' <- expr e -- convert into nano
+   return  (BinOp Sub (Const 0) e') -- 0 - e' = - e'
 
 expr (JS.BracketRef _ (JS.VarRef _ (JS.Id _ array)) index) = do -- for arrays e.g. x[i]
-  array' <- return (Array array)
-  index' <- expr index
-  return (Select array' index')
+  array' <- return (Array array) -- nano array
+  index' <- expr index -- parse 
+  return (Select array' index') -- select element from array 
 
 expr _ = empty
 
