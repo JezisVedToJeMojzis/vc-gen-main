@@ -100,6 +100,12 @@ statement (AssignStmt var rhs) = do
       rhs' <- expr rhs  -- parse rhs into nano
       return $ Assign var rhs'  -- rhs is assigned to var name
 
+-- Array Assignment
+statement (ArrAsnStmt array index rhs) = do
+  index' <- expr index
+  rhs' <- expr rhs
+  return (ArrAsn array index' rhs')
+  
 -- Variable declaration
 statement (JS.VarDeclStmt _ declarations) = do -- VarDeclStmt a [VarDecl a]	// var x, y=42;, spec 12.2
   statements <- mapM helpWDecl declarations -- apply helpWDecl fun to each decl
