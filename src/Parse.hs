@@ -77,6 +77,10 @@ helpWDecl (JS.VarDecl _ (JS.Id _ var) (Just rhs)) = do
   return $ Assign var rhs' -- rhs is assigned to var name
 helpWDecl _ = return $ skip -- else Seq [] (empty sequence of stmts)
 
+-- convert id to string
+convertIdToString :: JS.Id a -> String
+convertIdToString (JS.Id _ s) = s
+
 statement :: MonadNano String m => JS.Statement a -> m (Statement String)
 -- EmptyStmt a
 statement (JS.EmptyStmt _) = return (skip)  -- Empty statement (skip = Seq [] = empty sequence of statements)
@@ -87,9 +91,14 @@ statement (JS.ReturnStmt _ (Just expression)) = do -- ReturnStmt a (Maybe (Expre
   return $ Return expr'  -- nano return
 
 -- Assignment
-statement (JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.LVar _ var) rhs)) = do
-  rhs' <- expr rhs  -- parse rhs into nano
-  return $ Assign var rhs'  -- rhs is assigned to var name
+statement (AssignStmt var rhs) = do
+  case rhs of
+    JS.CallExpr _ (JS.VarRef _ fName) args -> do
+      args' <- mapM expr args
+      return $ AppAsn var (convertIdToString fName) args'  -- Extract the string value and assign the result of the function call to the variable
+    _ -> do
+      rhs' <- expr rhs  -- parse rhs into nano
+      return $ Assign var rhs'  -- rhs is assigned to var name
 
 -- Variable declaration
 statement (JS.VarDeclStmt _ declarations) = do -- VarDeclStmt a [VarDecl a]	// var x, y=42;, spec 12.2
@@ -136,20 +145,20 @@ statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "invariant")) [stm
   addInvariant stmt'  
   return $ skip
 
--- Ensures
-statement (CallStmt "ensures" [stmt]) = do
-  stmt' <- logic stmt
-  addEnsure stmt'  -- Add the postcondition to the upper function's contract
-  return $ skip
-
 -- Requires
-statement (CallStmt "requires" [stmt]) = do
+statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "requires")) [stmt])) = do
   stmt' <- logic stmt
   addRequire stmt'  -- Add the requirement to the upper function's contract
   return $ skip
 
+-- Ensures
+statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "ensures")) [stmt])) = do
+  stmt' <- logic stmt
+  addEnsure stmt'  -- Add the postcondition to the upper function's contract
+  return $ skip
+
 -- TODO change to "empty" later, skip is for debugging
-statement _ = return skip
+statement _ = empty
 
 -- | Helper function to scope invariant fetching to a block.
 scopeInv :: MonadNano String m => m a -> m (a, Logic String)
@@ -337,7 +346,6 @@ expr (JS.BracketRef _ (JS.VarRef _ (JS.Id _ array)) index) = do -- for arrays e.
   return (Select array' index') -- select element from array 
 
 expr _ = empty
-
 
 -- | You can use this to pattern match on a variable.
 -- For more info on this, search for the PatternSynonyms language pragma.
