@@ -134,13 +134,19 @@ statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "assert")) [stmt])
 statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "invariant")) [stmt])) = do
   stmt' <- logic stmt  -- parse stmt
   addInvariant stmt'  
-  return $ skip -- Seq []
+  return $ skip
 
--- Ensure
-statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "ensures")) [stmt])) = do
+-- Ensures
+statement (CallStmt "ensures" [stmt]) = do
   stmt' <- logic stmt
-  addEnsure stmt'
-  return $ skip -- Seq []
+  addEnsure stmt'  -- Add the postcondition to the upper function's contract
+  return $ skip
+
+-- Requires
+statement (CallStmt "requires" [stmt]) = do
+  stmt' <- logic stmt
+  addRequire stmt'  -- Add the requirement to the upper function's contract
+  return $ skip
 
 -- TODO change to "empty" later, skip is for debugging
 statement _ = return skip
@@ -192,9 +198,7 @@ logic (JS.InfixExpr _ op lhs rhs) = case op of
   JS.OpLAnd -> do -- &&
     lhs' <- logic lhs
     rhs' <- logic rhs
-    return $ if multipleLAnds (lhs' <> rhs') -- check for ands
-      then and [lhs', rhs']  -- multiple &&
-      else lhs' <> rhs' -- just one &&
+    return (and [lhs', rhs'])
   JS.OpLOr -> do -- ||
     lhs' <- logic lhs
     rhs' <- logic rhs
@@ -222,14 +226,15 @@ logic (Negate e) = do
   e' <- logic e
   return $ Neg e'
 
--- forall
-logic (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "forall")) [JS.VarRef _ (JS.Id _ var), expr]) = do
-  expr' <- logic expr -- parse 
-  return $ Forall var (expr')
+-- Handle quantifiers: forall
+logic (Call "forall" [Variable var, expr]) = do
+  expr' <- logic expr
+  return $ Forall var expr'
 
--- exists
-logic (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "exists")) [JS.VarRef _ (JS.Id _ var), JS.InfixExpr _ JS.OpGEq (JS.VarRef _ (JS.Id _ y)) (JS.VarRef _ (JS.Id _ x))]) =
-  return $ exists var (Pred (Var y :>=: Var x))
+-- Handle quantifiers: exists
+logic (Call "exists" [Variable var, expr]) = do 
+  expr' <- logic expr
+  return (exists var expr')
   
 logic _ = empty  
 
