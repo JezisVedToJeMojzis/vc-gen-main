@@ -217,6 +217,11 @@ logic (JS.InfixExpr _ op lhs rhs) = case op of
     return $ Pred (lhs' :<=: rhs')
   _ -> empty
 
+-- Handle negation
+logic (Negate e) = do
+  e' <- logic e
+  return $ Neg e'
+
 -- forall
 logic (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "forall")) [JS.VarRef _ (JS.Id _ var), expr]) = do
   expr' <- logic expr -- parse 
