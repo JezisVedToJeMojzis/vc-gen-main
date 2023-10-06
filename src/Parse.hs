@@ -102,17 +102,23 @@ statement (JS.BlockStmt _ stmts) = do -- block of statements {} // BlockStmt a [
   return $ Seq stmts' -- combining and returning the statements as nano block 
 
 -- If statement
-statement (JS.IfStmt _ stmt true false) = do -- if statement with both true and false conditions (whole body) // IfStmt a (Expression a) (Statement a) (Statement a) // if (e) stmt, spec 12.5
-  stmt' <- logic stmt -- converting js into nano
-  true' <- statement true -- recursion to convert body of true into nano
-  false' <- statement false -- recursion to convert body of false into nano
-  return $ If stmt' true' false' -- returns nano if wwith its true and false conditions
+statement (IfStmt conditional body0 body1) = do
+  cond' <- logic conditional -- Convert the condition expression to Nano logic
+  body0' <- statement body0 -- Convert the bodies of the if and else branches to Nano statements
+  body1' <- statement body1 
+  return $ If cond' body0' body1' -- Return a Nano If statement
 
+-- If single statement (no else branch)
+statement (IfSingleStmt conditional body) = do
+  cond' <- logic conditional -- Convert the condition expression to Nano logic
+  body' <- statement body -- Convert the body of the if branch to Nano statements
+  return $ If cond' body' skip -- Return a Nano If statement with no else branch
+  
 -- While statement
 statement (JS.WhileStmt _ expr stmt) = do  -- WhileStmt a (Expression a) (Statement a) // while (e) do stmt, spec 12.6
   expr' <- logic expr
   (stmt', inv) <- scopeInv (statement stmt)  -- handle inv
-  return $ While expr' inv stmt'
+  return $ While inv expr' stmt'
 
   -- Assume
 statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "assume")) [stmt])) = do -- ExprStmt a (Expression a) // expr;, spec 12.4
@@ -130,7 +136,14 @@ statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "invariant")) [stm
   addInvariant stmt'  
   return $ skip -- Seq []
 
-statement _ = empty 
+-- Ensure
+statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "ensures")) [stmt])) = do
+  stmt' <- logic stmt
+  addEnsure stmt'
+  return $ skip -- Seq []
+
+-- TODO change to "empty" later, skip is for debugging
+statement _ = return skip
 
 -- | Helper function to scope invariant fetching to a block.
 scopeInv :: MonadNano String m => m a -> m (a, Logic String)
