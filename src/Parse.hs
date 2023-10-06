@@ -154,17 +154,25 @@ statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "invariant")) [stm
 -- Requires
 statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "requires")) [stmt])) = do
   stmt' <- logic stmt
-  addRequire stmt'  -- Add the requirement to the upper function's contract
+  addRequire stmt'  
   return $ skip
 
 -- Ensures
 statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "ensures")) [stmt])) = do
   stmt' <- logic stmt
-  addEnsure stmt'  -- Add the postcondition to the upper function's contract
+  addEnsure stmt'  
+  return $ skip
+
+-- Modifies
+statement (CallStmt "modifies" [Variable var]) = do
+  addModifies var  
   return $ skip
 
 -- TODO change to "empty" later, skip is for debugging
 statement _ = empty
+
+stringToList :: String -> [a]
+stringToList str = map (\c -> undefined) str
 
 -- | Helper function to scope invariant fetching to a block.
 scopeInv :: MonadNano String m => m a -> m (a, Logic String)
@@ -185,7 +193,6 @@ addRequire l = modify (mempty { require = l } <>)
 -- | Helper function to add an ensure to the upper function.
 addEnsure :: MonadNano a m => Logic a -> m ()
 addEnsure l = modify (mempty { ensure = l } <>)
-
 
 addModifies :: MonadNano a m => a -> m ()
 addModifies x = modify (mempty { modifies = [x] } <>)
