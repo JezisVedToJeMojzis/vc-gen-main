@@ -80,16 +80,23 @@ instance Vars Logic where
     Forall x l -> Set.union (vars l) (vars $ Var x)
 
 instance Subable Logic where
-  subst var expr = substExpr
+  subst var expr = substLogic
     where
-      substExpr (Pred p) = Pred (subst var expr p) -- subst in predicate
-      substExpr (Neg l) = Neg (substExpr l) -- subst in negation
-      substExpr (And l) = And (map substExpr l) -- subst in mapped list
-      substExpr (Forall x l) = Forall x (substExpr l) 
+      substLogic (Pred p) = Pred (subst var expr p) -- Substitution in predicate
+      substLogic (Neg l) = Neg (substLogic l) -- Substitution in negation
+      substLogic (And l) = And (map substLogic l) -- Substitution in conjunction
+      substLogic (Forall x l) = 
+        if x == var then Forall x l else Forall x (substLogic l) -- Avoid capturing
     
 
 
     
-
+-- subst var expr = case expr of
+--     Pred p -> Pred (subst var expr)
+--     Neg l -> Neg (subst var l)
+--     And ls -> And (map (subst var) ls)
+--     Forall x l -> if x == var
+--                   then Forall x l -- Avoid capturing free variables
+--                   else Forall x (subst var l)
     
 

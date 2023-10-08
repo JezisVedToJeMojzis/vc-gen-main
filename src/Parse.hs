@@ -86,7 +86,7 @@ statement :: MonadNano String m => JS.Statement a -> m (Statement String)
 statement (JS.EmptyStmt _) = return (skip)  -- Empty statement (skip = Seq [] = empty sequence of statements)
 
 -- Return
-statement (JS.ReturnStmt _ (Just expression)) = do -- ReturnStmt a (Maybe (Expression a)) // return expr;, spec 12.9
+statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) // return expr;, spec 12.9
   expr' <- expr expression  -- parsing js expr into nano expr
   return $ Return expr'  -- nano return
 
@@ -107,9 +107,9 @@ statement (ArrAsnStmt array index rhs) = do
   return (ArrAsn array index' rhs')
   
 -- Variable declaration
-statement (JS.VarDeclStmt _ declarations) = do -- VarDeclStmt a [VarDecl a]	// var x, y=42;, spec 12.2
-  statements <- mapM helpWDecl declarations -- apply helpWDecl fun to each decl
-  return $ Seq statements 
+statement (DeclStmt [Decl var stmt]) = do -- VarDeclStmt a [VarDecl a]	// var x, y=42;, spec 12.2
+  stmt' <- expr stmt -- apply helpWDecl fun to each decl
+  return (Assign var stmt')
 
 -- Block statement
 statement (JS.BlockStmt _ stmts) = do -- block of statements {} // BlockStmt a [Statement a] // {stmts}, spec 12.1
@@ -169,7 +169,7 @@ statement (CallStmt "modifies" [Variable var]) = do
   return $ skip
 
 -- TODO change to "empty" later, skip is for debugging
-statement _ = empty
+statement EmptyStmt = return skip
 
 stringToList :: String -> [a]
 stringToList str = map (\c -> undefined) str
@@ -213,52 +213,43 @@ multipleLAnds (And _) = True
 multipleLAnds _ = False
 
 logic :: MonadNano String m => JS.Expression a -> m (Logic String)
-logic (JS.PrefixExpr _ JS.PrefixLNot (JS.BoolLit _ b)) = return $ if b then false else true -- negated bool
-logic (JS.BoolLit _ b) = return $ if b then true else false -- not negated bool
-
-logic (JS.InfixExpr _ op lhs rhs) = case op of
-  JS.OpLAnd -> do -- &&
-    lhs' <- logic lhs
-    rhs' <- logic rhs
-    return (and [lhs', rhs'])
-  JS.OpLOr -> do -- ||
-    lhs' <- logic lhs
-    rhs' <- logic rhs
-    return $ or [lhs', rhs']
-  JS.OpGEq -> do -- >=
-    lhs' <- expr lhs
-    rhs' <- expr rhs
-    return $ Pred (lhs' :>=: rhs')
-  JS.OpEq -> do -- ==
-    lhs' <- expr lhs
-    rhs' <- expr rhs
-    return $ Pred (lhs' :==: rhs')
-  JS.OpNEq -> do -- !=
-    lhs' <- expr lhs
-    rhs' <- expr rhs
-    return $ Neg (Pred (lhs' :==: rhs'))
-  JS.OpLEq -> do -- <=
-    lhs' <- expr lhs
-    rhs' <- expr rhs
-    return $ Pred (lhs' :<=: rhs')
-  _ -> empty
+logic (Bool True) = return true
+logic (Bool False) = return false
 
 -- Handle negation
 logic (Negate e) = do
   e' <- logic e
   return $ Neg e'
 
--- Handle quantifiers: forall
-logic (Call "forall" [Variable var, expr]) = do
-  expr' <- logic expr
-  return $ Forall var expr'
+-- And
+logic (JS.InfixExpr _ JS.OpLAnd e1 e2) = do
+  logic1 <- logic e1
+  logic2 <- logic e2
+  return (and [logic1, logic2])
 
--- Handle quantifiers: exists
-logic (Call "exists" [Variable var, expr]) = do 
-  expr' <- logic expr
-  return (exists var expr')
+-- Or
+logic (JS.InfixExpr _ JS.OpLOr e1 e2) = do
+  logic1 <- logic e1
+  logic2 <- logic e2
+  return (or [logic1, logic2])
+
+-- Forall
+logic (JS.CallExpr _ (Variable name) [Variable x, y])
+  | name == "forall" = do
+    yLogic <- logic y
+    return (Logic.Forall x yLogic)
+
+-- Exists
+logic (JS.CallExpr _ (Variable name) [Variable x, y])
+  | name == "exists" = do
+    yLogic <- logic y
+    return (Logic.exists x yLogic)
   
-logic _ = empty  
+-- Default case
+logic (JS.CallExpr _ _ [_, y]) = logic y
+
+-- converts remaining to predicates
+logic a = predicate a
 
 
 -- | Converts JS into Nano expressions of type Bool
@@ -269,6 +260,9 @@ logic _ = empty
 -- Notice how we return Logic here, this is because we express some of the
 -- operations via a negation of a predicate.
 predicate :: MonadNano String m => JS.Expression a -> m (Logic String)
+predicate (Negate e) = do
+  pred' <- predicate e
+  return (Neg pred')
 predicate (JS.InfixExpr _ op lhs rhs) = case op of
   JS.OpEq -> do -- ==
     lhs' <- expr lhs -- convert js into nano
@@ -281,7 +275,7 @@ predicate (JS.InfixExpr _ op lhs rhs) = case op of
   JS.OpLT -> do -- <
     lhs' <- expr lhs
     rhs' <- expr rhs
-    return $ Pred (lhs' :<=: rhs')
+    return $ Neg (Pred (lhs' :>=: rhs'))
   JS.OpLEq -> do -- <=
     lhs' <- expr lhs
     rhs' <- expr rhs
