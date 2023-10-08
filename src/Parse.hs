@@ -168,7 +168,7 @@ statement (CallStmt "modifies" [Variable var]) = do
   addModifies var  
   return $ skip
 
--- TODO change to "empty" later, skip is for debugging
+-- Empty
 statement EmptyStmt = return skip
 
 stringToList :: String -> [a]

@@ -156,30 +156,10 @@ class VCGen f where
 -- vcgen _ _ = return false
 instance VCGen Statement where
 
-  -- Assert
-  vcgen (Assert l) post = do
-    let pre = and [post, l]
-    return pre
-
-  -- Assume
-  vcgen (Assume l) post = do
-    let pre = implies l post
-    return pre
-
   -- Seq stmt
-  vcgen (Seq stmts) post = do
-    let genVcs [] accPre = return accPre
-        genVcs (stmt:rest) accPre = do
-          preStmt <- vcgen stmt accPre
-          genVcs rest preStmt
-    preSeq <- genVcs stmts post
-    return preSeq
+  vcgen (Seq []) post = return post
+  vcgen (Seq stmts) post = foldrM (\stmt accPost -> vcgen stmt accPost) post stmts
 
- -- Assignment
-  vcgen (Assign var expr) post = do
-    let pre = subst var expr post
-    return pre
- 
   -- if else
   vcgen (If cond thenStmt elseStmt) post = do
     preThen <- vcgen thenStmt post
@@ -189,6 +169,22 @@ instance VCGen Statement where
     let pre = and [preThen', preElse']
     return pre
 
+  -- Assume (P implies Q)
+  vcgen (Assume l) post = do
+    let pre = implies l post
+    return pre
+
+  -- Assert (P and Q)
+  vcgen (Assert l) post = do
+    let pre = and [post, l]
+    return pre
+
+ -- Assignment (subst)
+  vcgen (Assign var expr) post = do
+    let pre = subst var expr post
+    return pre
+ 
+ -- Catch statement
   vcgen _ _ = return false
 
 instance VCGen Function where
