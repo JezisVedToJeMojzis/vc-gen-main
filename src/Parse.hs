@@ -95,7 +95,7 @@ statement (AssignStmt var rhs) = do
   case rhs of
     JS.CallExpr _ (JS.VarRef _ fName) args -> do
       args' <- mapM expr args
-      return $ AppAsn var (convertIdToString fName) args'  -- Extract the string value and assign the result of the function call to the variable
+      return $ AppAsn var (convertIdToString fName) args'  -- extract the string value and assign to variable
     _ -> do
       rhs' <- expr rhs  -- parse rhs into nano
       return $ Assign var rhs'  -- rhs is assigned to var name
@@ -118,16 +118,16 @@ statement (JS.BlockStmt _ stmts) = do -- block of statements {} // BlockStmt a [
 
 -- If statement
 statement (IfStmt conditional body0 body1) = do
-  cond' <- logic conditional -- Convert the condition expression to Nano logic
-  body0' <- statement body0 -- Convert the bodies of the if and else branches to Nano statements
+  cond' <- logic conditional -- convert expr into nano
+  body0' <- statement body0 -- body of if and else into nano
   body1' <- statement body1 
-  return $ If cond' body0' body1' -- Return a Nano If statement
+  return $ If cond' body0' body1' -- return nano if
 
--- If single statement (no else branch)
+-- If (no else)
 statement (IfSingleStmt conditional body) = do
-  cond' <- logic conditional -- Convert the condition expression to Nano logic
-  body' <- statement body -- Convert the body of the if branch to Nano statements
-  return $ If cond' body' skip -- Return a Nano If statement with no else branch
+  cond' <- logic conditional -- convert expr into nano
+  body' <- statement body -- body of if into nano
+  return $ If cond' body' skip -- return without else
   
 -- While statement
 statement (JS.WhileStmt _ expr stmt) = do  -- WhileStmt a (Expression a) (Statement a) // while (e) do stmt, spec 12.6

@@ -155,84 +155,39 @@ class VCGen f where
 -- vcgen (Assume l) post = ...
 -- vcgen _ _ = return false
 instance VCGen Statement where
+
+  -- Assert
   vcgen (Assert l) post = do
-    -- Generate verification condition: post AND l
-    let pre = and [l, post]
+    let pre = and [post, l]
     return pre
 
+  -- Assume
   vcgen (Assume l) post = do
-    -- Incorporate the assumption into the precondition: l => post
     let pre = implies l post
     return pre
 
-  -- Handle sequential statements (Seq)
+  -- Seq stmt
   vcgen (Seq stmts) post = do
-    -- Generate verification conditions for each statement in the sequence
-    let generateVCs [] accPre = return accPre
-        generateVCs (stmt:rest) accPre = do
+    let genVcs [] accPre = return accPre
+        genVcs (stmt:rest) accPre = do
           preStmt <- vcgen stmt accPre
-          generateVCs rest preStmt
-    preSeq <- generateVCs stmts post
+          genVcs rest preStmt
+    preSeq <- genVcs stmts post
     return preSeq
 
-  -- vcgen (Seq stmts) post = case stmts of
-  --   (x::xs) -> do
-  --     vc <- vcgen x post
-  --     vcgen (Seq xs) vc
-  --   [x] -> do 
-  --     vc <- vcgen x post
-  --     return vc
-  --   [] -> return post
-
-
-    
-  -- Handle variable assignment
+ -- Assignment
   vcgen (Assign var expr) post = do
-    -- Apply substitution to the postcondition
     let pre = subst var expr post
     return pre
  
-  -- if
+  -- if else
   vcgen (If cond thenStmt elseStmt) post = do
-    -- Generate verification conditions for the If statement
     preThen <- vcgen thenStmt post
     preElse <- vcgen elseStmt post
     let preThen' = implies cond preThen
     let preElse' = implies (neg cond) preElse
     let pre = and [preThen', preElse']
     return pre
-
-  -- Handle the return statement
-  vcgen (Return expr) post = do
-    -- Generate verification condition: post AND (result = expr)
-    let pre = and [post, Pred (Var result :==: expr)]
-    return pre
-
-  -- Handle the while statement
-  vcgen (While inv cond body) post = do
-    -- Generate verification conditions for the while loop
-    preBody <- vcgen body inv
-    let preWhile = and [inv, implies cond (and [preBody, post])]
-    return preWhile
-
-  -- Placeholder implementation for the Havoc pattern
-  vcgen (Havoc var) post = 
-    -- Placeholder: Generate verification condition for the Havoc statement
-    -- You may need to handle variable modifications caused by Havoc.
-    return false
-
-  -- Placeholder implementation for the ArrAsn pattern
-  vcgen (ArrAsn arr index rhs) post = dp
-    let arrIndex = Arr arr index
-    let assignmentCondition = Pred (arrIndex :==: rhs)
-    let pre = and [assignmentCondition, post]
-    return pre
-  
-  -- Placeholder implementation for the AppAsn pattern
-  vcgen (AppAsn funcVar resultVar args) post = 
-    -- Placeholder: Generate verification condition for function assignments
-    -- You need to implement this to handle function calls and their effects.
-    return false
 
   vcgen _ _ = return false
 
@@ -244,7 +199,7 @@ instance VCGen Function where
     let stmt = seq [pre, body, post]
     vcgen stmt post'
 
--- | Check whether a given nano program is valid.
+-- | Check validity
 check :: Nano String -> IO Bool
 check nano = do
   let progmap = Map.fromList $ (\f -> (fname f, f)) <$> nano
