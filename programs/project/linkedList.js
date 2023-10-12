@@ -1,3 +1,4 @@
+// basic linked list with 4 nodes
 function createLinkedList() {
     return {
         head: {
