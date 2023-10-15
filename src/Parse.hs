@@ -168,6 +168,11 @@ statement (CallStmt "modifies" [Variable var]) = do
   addModifies var  
   return $ skip
 
+-- Load (y := *x)
+
+
+-- Store (x* := e)
+
 -- Empty
 statement EmptyStmt = return skip
 
@@ -421,3 +426,11 @@ pattern DeclStmt statements <- JS.VarDeclStmt _ statements
 
 pattern Decl :: String -> JS.Expression a -> JS.VarDecl a
 pattern Decl var expr <- JS.VarDecl _ (JS.Id _ var) (Just expr)
+
+-- y := *x (load)
+pattern LoadStmt :: String -> JS.Expression a -> JS.Statement a
+pattern LoadStmt lhs rhs <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.LVar _ lhs) (JS.PrefixExpr _ JS.PrefixStar rhs))
+
+-- x* := e (store)
+pattern StoreStmt :: String -> JS.Expression a -> JS.Statement a
+pattern StoreStmt rhs e <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.PrefixExpr _ JS.PrefixStar (JS.LVar _ rhs)) e)

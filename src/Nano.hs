@@ -64,6 +64,11 @@ data Statement a
   | AppAsn a a [Expr a]
   -- ^ x := f(e0, .., eN)
   | Havoc a
+  -- ^ havoc
+  | Load a (Expr a)
+  -- ^ y := *x (load)
+  | Store (Expr a) a
+  -- ^ x* := e (store)
   deriving (Eq, Ord, Show)
 
 instance Semigroup (Statement a) where
