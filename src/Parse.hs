@@ -167,11 +167,16 @@ statement (JS.ExprStmt _ (JS.CallExpr _ (JS.VarRef _ (JS.Id _ "ensures")) [stmt]
 statement (CallStmt "modifies" [Variable var]) = do
   addModifies var  
   return $ skip
+ 
+-- Load (y := *x) 
+statement (LoadStmt lhs rhs) = do
+  rhs' <- expr rhs -- parsing rhs into nano
+  return (Load lhs rhs')  -- load into nano
 
--- Load (y := *x)
-
-
--- Store (x* := e)
+-- Store (x* := e) 
+statement (StoreStmt lhs e) = do
+  e' <- expr e  -- parsing e into nano
+  return (Store lhs e')  -- store into nano
 
 -- Empty
 statement EmptyStmt = return skip
