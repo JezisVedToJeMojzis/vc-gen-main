@@ -169,14 +169,14 @@ statement (CallStmt "modifies" [Variable var]) = do
   return $ skip
  
 -- Load (y := *x) 
-statement (LoadStmt lhs rhs) = do
-  rhs' <- expr rhs -- parsing rhs into nano
-  return (Load lhs rhs')  -- load into nano
+-- statement (LoadStmt lhs rhs) = do
+--   rhs' <- expr rhs -- parsing rhs into nano
+--   return (Load lhs rhs')  -- load into nano
 
--- Store (x* := e) 
-statement (StoreStmt lhs e) = do
-  e' <- expr e  -- parsing e into nano
-  return (Store lhs e')  -- store into nano
+  --  x* := e (Storee)
+statement (AssignStmt nodeVar (NodeValue "value" nodeValueExpr)) = do
+  nodeValueExpr <- expr nodeValueExpr
+  return $ Storee nodeVar nodeValueExpr
 
 -- Empty
 statement EmptyStmt = return skip
@@ -433,9 +433,27 @@ pattern Decl :: String -> JS.Expression a -> JS.VarDecl a
 pattern Decl var expr <- JS.VarDecl _ (JS.Id _ var) (Just expr)
 
 -- y := *x (load)
-pattern LoadStmt :: String -> JS.Expression a -> JS.Statement a
-pattern LoadStmt lhs rhs <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.LVar _ lhs) (JS.PrefixExpr _ JS.PrefixStar rhs))
+-- pattern LoadStmt :: String -> JS.Expression a -> JS.Statement a
+-- pattern LoadStmt lhs rhs <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.LVar _ lhs) (JS.PrefixExpr _ JS.PrefixStar rhs))
 
--- x* := e (store)
-pattern StoreStmt :: String -> JS.Expression a -> JS.Statement a
-pattern StoreStmt rhs e <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.PrefixExpr _ JS.PrefixStar (JS.LVar _ rhs)) e)
+-- -- x* := e (store)
+-- pattern StoreStmt :: String -> JS.Expression a -> JS.Statement a
+-- pattern StoreStmt rhs e <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.PrefixExpr _ JS.PrefixStar (JS.LVar _ rhs)) e)
+
+
+-- -- Custom pattern for loading "next" pointer
+-- pattern LoadNext :: String -> String -> JS.Statement a
+-- pattern LoadNext lhs rhs <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.LVar _ lhs) (JS.AssignExpr _ JS.OpAssign (JS.LVar _ rhs) (JS.DotRef _ (JS.Id _ "next"))))
+
+-- Custom pattern for storing the value of a node using DotRef
+-- pattern StoreValue :: String -> String -> JS.Statement a
+-- pattern StoreValue node value <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.DotRef _ (JS.Id _ node) (JS.Id _ "value")) (JS.VarRef _ value))
+
+-- pattern StoreValue :: JS.Expression a -> JS.Expression a
+-- pattern StoreValue node <- JS.DotRef _ node (JS.Id _ "value")
+
+-- pattern AccessNodeValue :: String -> String -> JS.Expression a
+-- pattern AccessNodeValue node <- JS.LDot _ (JS.LVar _ node) (JS.Id _ "value")
+
+pattern NodeValue :: String -> JS.Expression a -> JS.Expression a
+pattern NodeValue nodeVar obj <- JS.DotRef _ obj (JS.Id _ nodeVar)
