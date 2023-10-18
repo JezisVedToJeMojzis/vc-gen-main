@@ -66,9 +66,9 @@ data Statement a
   | Havoc a
   -- ^ havoc
   | Load a a
-  -- ^ y := *x (load)
+  -- ^ y := *x (load) -- Add these as an expression instead of statement
   | Store a (Expr a)
-  -- ^ x* := e (store)
+  -- ^ *x := e (store)
   deriving (Eq, Ord, Show)
 
 instance Semigroup (Statement a) where
@@ -188,6 +188,11 @@ instance VCGen Statement where
   vcgen (Assign var expr) post = do
     let pre = subst var expr post
     return pre
+
+  -- -- Return
+  -- vcgen (Return expr) post = do
+  --   let pre = subst result expr post -- Substitute the result variable with the expression
+  --   return pre
  
  -- Catch statement
   vcgen _ _ = return false

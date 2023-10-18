@@ -59,6 +59,7 @@ toZ3Pred varMap (e1 :<=: e2) = do
   e2' <- toZ3Exp varMap e2
   Z3.mkGe e2' e1'
 
+-- look up pattern match for referencing and dereferencing
 toZ3Exp :: Map.Map String Z3.AST -> Expr String -> Z3 Z3.AST
 toZ3Exp varMap (Var v) = return $ fromJust $ Map.lookup v varMap
 toZ3Exp varMap (Array a) = return $ fromJust $ Map.lookup a varMap

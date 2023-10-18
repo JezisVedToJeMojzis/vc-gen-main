@@ -176,7 +176,7 @@ statement (CallStmt "modifies" [Variable var]) = do
   --  x* := e (Storee)
 statement (AssignStmt nodeVar (NodeValue "value" nodeValueExpr)) = do
   nodeValueExpr <- expr nodeValueExpr
-  return $ Storee nodeVar nodeValueExpr
+  return $ Nano.Store nodeVar nodeValueExpr
 
 -- Empty
 statement EmptyStmt = return skip
