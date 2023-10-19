@@ -1,6 +1,6 @@
 function pointer() {
     var x = 5;       
-    var y;          
+    var y = 0;          
 
     var *ptr = &x;  //Assign the address of x to the pointer ptr
 
