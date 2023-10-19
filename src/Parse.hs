@@ -91,14 +91,14 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
   return $ Return expr'  -- nano return
 
 -- Pointer referencing
-statement (AssignStmt var (JS.PrefixExpr _ JS.PrefixPlus stmt)) = do
-  stmt' <- expr stmt
-  return (LoadPtr var stmt')
+-- statement (AssignStmt var (JS.PrefixExpr _ JS.PrefixPlus stmt)) = do
+--   stmt' <- expr stmt
+--   return (LoadPtr var stmt')
 
--- Pointer dereferencing
-statement (AssignStmt var (JS.PrefixExpr _ JS.PrefixBNot stmt)) = do
-  stmt' <- expr stmt
-  return (StorePtr var stmt')
+-- -- Pointer dereferencing
+-- statement (AssignStmt var (JS.PrefixExpr _ JS.PrefixBNot stmt)) = do
+--   stmt' <- expr stmt
+--   return (StorePtr var stmt')
 
 -- Pointer stuff
 -- statement (AssignStmt var rhs) = do
@@ -117,6 +117,12 @@ statement (AssignStmt var rhs) = do
     JS.CallExpr _ (JS.VarRef _ fName) args -> do
       args' <- mapM expr args
       return $ AppAsn var (convertIdToString fName) args'  -- extract the string value and assign to variable
+    JS.PrefixExpr _ JS.PrefixPlus rhs -> do -- reference
+      rhs'' <- expr rhs
+      return $ LoadPtr var rhs''  
+    JS.PrefixExpr _ JS.PrefixBNot rhs -> do -- dereference
+      rhs'' <- expr rhs
+      return $ StorePtr var rhs''
     _ -> do
       rhs' <- expr rhs  -- parse rhs into nano
       return $ Assign var rhs'  -- rhs is assigned to var name
