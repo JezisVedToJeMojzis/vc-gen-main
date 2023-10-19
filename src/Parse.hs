@@ -91,10 +91,21 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
   return $ Return expr'  -- nano return
 
 -- Pointer referencing
-statement (DeclStmt [PointerRef var stmt]) = do
-  stmt' <- expr stmt
-  return (LoadPtr var stmt')
+-- statement (DeclStmt [PointerRef var stmt]) = do
+--   stmt' <- expr stmt
+--   return (LoadPtr var stmt')
+   
+-- Pointer stuff
+statement (AssignStmt var rhs) = do
+  case rhs of
+    JS.PrefixExpr _ JS.PrefixPlus rhs -> do -- reference
+      rhs'' <- expr rhs
+      return $ LoadPtr var rhs''  
+    JS.PrefixExpr _ JS.PrefixBNot rhs -> do -- dereference
+      rhs'' <- expr rhs
+      return $ StorePtr var rhs'' 
 
+  
 -- Assignment
 statement (AssignStmt var rhs) = do
   case rhs of
@@ -104,7 +115,7 @@ statement (AssignStmt var rhs) = do
     _ -> do
       rhs' <- expr rhs  -- parse rhs into nano
       return $ Assign var rhs'  -- rhs is assigned to var name
-
+    
 -- Array Assignment
 statement (ArrAsnStmt array index rhs) = do
   index' <- expr index
@@ -173,8 +184,6 @@ statement (CallStmt "modifies" [Variable var]) = do
   addModifies var  
   return $ skip
  
-
-
 -- Empty
 statement EmptyStmt = return skip
 
@@ -437,7 +446,10 @@ pattern ArrAsnStmt array index rhs <- AssignStmt' (JS.LBracket _ (Variable array
 
 -- Separate pattern for handling expressions with a + in front of the integer
 pattern PointerRef :: String -> JS.Expression a -> JS.VarDecl a
-pattern PointerRef var expr <- JS.VarDecl _ (JS.Id _ var) (Just (JS.PrefixExpr _ JS.PrefixPlus expr))
+pattern PointerRef var expr <- JS.VarDecl _ (JS.Id _ var) (Just (JS.PrefixExpr _ JS.PrefixPlus expr)) 
+
+pattern PointerDeref :: String -> JS.Expression a -> JS.VarDecl a
+pattern PointerDeref var expr <- JS.VarDecl _ (JS.Id _ var) (Just (JS.PrefixExpr _ JS.PrefixBNot expr)) 
 
 pattern DeclStmt :: [JS.VarDecl a] -> JS.Statement a
 pattern DeclStmt statements <- JS.VarDeclStmt _ statements
@@ -470,6 +482,7 @@ pattern Decl var expr <- JS.VarDecl _ (JS.Id _ var) (Just expr)
 
 -- pattern NodeValue :: String -> JS.Expression a -> JS.Expression a
 -- pattern NodeValue nodeVar obj <- JS.DotRef _ obj (JS.Id _ nodeVar)
+
 
 pattern LoadStmt ::  String -> JS.Expression a -> JS.Statement a
 pattern LoadStmt ptr ref <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.LVar _ ptr) (JS.PrefixExpr _ JS.PrefixPlus ref))
