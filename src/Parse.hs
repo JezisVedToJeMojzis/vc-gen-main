@@ -81,6 +81,14 @@ helpWDecl _ = return $ skip -- else Seq [] (empty sequence of stmts)
 convertIdToString :: JS.Id a -> String
 convertIdToString (JS.Id _ s) = s
 
+exprToString :: Expr String -> String
+exprToString (StrLit str) = str
+
+-- Add more cases for other expression types as needed
+
+-- Default case for unsupported expression types
+exprToString _ = error "Unsupported expression type"
+
 statement :: MonadNano String m => JS.Statement a -> m (Statement String)
 -- EmptyStmt a
 statement (JS.EmptyStmt _) = return (skip)  -- Empty statement (skip = Seq [] = empty sequence of statements)
@@ -110,22 +118,37 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
 --       rhs'' <- expr rhs
 --       return $ StorePtr var rhs'' 
 
-  
+
 -- Assignment
-statement (AssignStmt var rhs) = do
-  case rhs of
+statement (AssignStmt var rhs) = do   
+  let ptr =
+        if isPrefixPlus rhs -- checking for our pointer (var ptr) and storing it
+          then var
+          else undefined
+  let ref =
+        if isPrefixPlus rhs -- checking for our ref var (var x) and storing it
+          then rhs
+          else undefined   
+  case rhs of        
     JS.CallExpr _ (JS.VarRef _ fName) args -> do
       args' <- mapM expr args
       return $ AppAsn var (convertIdToString fName) args'  -- extract the string value and assign to variable
     JS.PrefixExpr _ JS.PrefixPlus rhs -> do -- reference
-      rhs'' <- expr rhs
-      return $ LoadPtr var rhs''  
+      rhs' <- expr rhs
+      return $ LoadPtr var rhs'  
     JS.PrefixExpr _ JS.PrefixBNot rhs -> do -- dereference
-      rhs'' <- expr rhs
-      return $ StorePtr var rhs''
+      rhs' <- expr rhs
+    --  ref' <- expr ptr
+      return $ Seq [StorePtr var rhs'] --Seq [StorePtr var rhs', Assign ref' rhs']
     _ -> do
       rhs' <- expr rhs  -- parse rhs into nano
       return $ Assign var rhs'  -- rhs is assigned to var name
+  where
+    isPrefixPlus (JS.PrefixExpr _ JS.PrefixPlus _) = True
+    isPrefixPlus _ = False
+    -- isPrefixNeg (JS.PrefixExpr _ JS.PrefixBNot _) = True
+    -- isPrefixNeg _ = False
+    
     
 -- Array Assignment
 statement (ArrAsnStmt array index rhs) = do

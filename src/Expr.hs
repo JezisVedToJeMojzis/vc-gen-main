@@ -19,7 +19,7 @@ data Expr a
   | Select (Expr a) (Expr a)
   | Store (Expr a) (Expr a) (Expr a)
   | Ref (Expr a)  --  y := ~x (load) 
-  -- | StorePtr a (Expr a)   --  !x := e (store)
+  | StrLit String   --  !x := e (store)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 -- | Binary expression operations.
