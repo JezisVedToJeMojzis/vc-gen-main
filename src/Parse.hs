@@ -94,7 +94,8 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
 statement (AssignStmt var (JS.PrefixExpr _ JS.PrefixPlus stmt)) = do
   stmt' <- expr stmt
   return (LoadPtr var stmt')
-   
+
+-- Pointer dereferencing
 statement (AssignStmt var (JS.PrefixExpr _ JS.PrefixBNot stmt)) = do
   stmt' <- expr stmt
   return (StorePtr var stmt')
