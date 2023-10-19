@@ -91,19 +91,23 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
   return $ Return expr'  -- nano return
 
 -- Pointer referencing
--- statement (DeclStmt [PointerRef var stmt]) = do
---   stmt' <- expr stmt
---   return (LoadPtr var stmt')
+statement (AssignStmt var (JS.PrefixExpr _ JS.PrefixPlus stmt)) = do
+  stmt' <- expr stmt
+  return (LoadPtr var stmt')
    
+statement (AssignStmt var (JS.PrefixExpr _ JS.PrefixBNot stmt)) = do
+  stmt' <- expr stmt
+  return (StorePtr var stmt')
+
 -- Pointer stuff
-statement (AssignStmt var rhs) = do
-  case rhs of
-    JS.PrefixExpr _ JS.PrefixPlus rhs -> do -- reference
-      rhs'' <- expr rhs
-      return $ LoadPtr var rhs''  
-    JS.PrefixExpr _ JS.PrefixBNot rhs -> do -- dereference
-      rhs'' <- expr rhs
-      return $ StorePtr var rhs'' 
+-- statement (AssignStmt var rhs) = do
+--   case rhs of
+--     JS.PrefixExpr _ JS.PrefixPlus rhs -> do -- reference
+--       rhs'' <- expr rhs
+--       return $ LoadPtr var rhs''  
+--     JS.PrefixExpr _ JS.PrefixBNot rhs -> do -- dereference
+--       rhs'' <- expr rhs
+--       return $ StorePtr var rhs'' 
 
   
 -- Assignment
