@@ -18,7 +18,7 @@ data Expr a
   | BinOp BinOp (Expr a) (Expr a)
   | Select (Expr a) (Expr a)
   | Store (Expr a) (Expr a) (Expr a)
-  -- | LoadPtr a a --  y := ~x (load) 
+  | Ref (Expr a)  --  y := ~x (load) 
   -- | StorePtr a (Expr a)   --  !x := e (store)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -49,6 +49,7 @@ instance Vars Expr where
     v@(Var _) -> Set.singleton v
     a@(Array _) -> Set.singleton a
     Const _ -> mempty
+    Ref _ -> mempty
     BinOp _ lhs rhs -> vars lhs <> vars rhs
     Select array index -> vars array <> vars index
     Store array index expr -> mconcat [vars array, vars index, vars expr]
@@ -74,6 +75,7 @@ instance Subable Expr where
       substExpr (Store array index val) = Store (substExpr array) (substExpr index) (substExpr val)
       -- substExpr (LoadPtr a a) = LoadPtr 
       -- substExpr (StorePtr a e) = StorePtr 
+      substExpr (Ref n) = Ref n -- return original const
   
 instance Subable Pred where
   subst var expr pred = case pred of

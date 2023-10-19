@@ -65,7 +65,7 @@ data Statement a
   -- ^ x := f(e0, .., eN)
   | Havoc a
   -- ^ havoc
-  | LoadPtr a a
+  | LoadPtr a (Expr a)
   -- ^ y := *x (load) 
   | StorePtr a (Expr a)
   -- ^ *x := e (store)

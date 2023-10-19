@@ -168,6 +168,11 @@ statement (CallStmt "modifies" [Variable var]) = do
   addModifies var  
   return $ skip
  
+ -- LoadPtr
+statement (LoadStmt var rhs) = do
+  rhs' <- expr1 rhs  
+  return $ LoadPtr var rhs'  
+
 -- Empty
 statement EmptyStmt = return skip
 
@@ -347,12 +352,24 @@ expr (Minus e) = do -- for e.g. -3
    e' <- expr e -- convert into nano
    return  (BinOp Sub (Const 0) e') -- 0 - e' = - e'
 
+expr (Plus e) = do -- for e.g. -3
+   e' <- expr e -- convert into nano
+   return (Ref e') -- 0 - e' = - e'
+
 expr (JS.BracketRef _ (JS.VarRef _ (JS.Id _ array)) index) = do -- for arrays e.g. x[i]
   array' <- return (Array array) -- nano array
   index' <- expr index -- parse 
   return (Select array' index') -- select element from array 
 
 expr _ = empty
+
+expr1 :: MonadNano String m => JS.Expression a -> m (Expr String)  -- this needs to be updated
+
+expr1 (Plus e) = do -- for e.g. -3
+   e' <- expr e -- convert into nano
+   return (Ref e') -- 0 - e' = - e'
+
+expr1 _ = empty
 
 -- | You can use this to pattern match on a variable.
 -- For more info on this, search for the PatternSynonyms language pragma.
@@ -447,3 +464,9 @@ pattern Decl var expr <- JS.VarDecl _ (JS.Id _ var) (Just expr)
 
 -- pattern NodeValue :: String -> JS.Expression a -> JS.Expression a
 -- pattern NodeValue nodeVar obj <- JS.DotRef _ obj (JS.Id _ nodeVar)
+
+pattern LoadStmt ::  String -> JS.Expression a -> JS.Statement a
+pattern LoadStmt ptr ref <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign (JS.LVar _ ptr) (JS.PrefixExpr _ JS.PrefixPlus ref))
+
+pattern Plus :: JS.Expression a -> JS.Expression a
+pattern Plus e <- JS.PrefixExpr _ JS.PrefixPlus e

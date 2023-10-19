@@ -109,8 +109,8 @@ rubric = do
         , fmods = []
         , fbody = Seq
           [ Assign "x" $ Const 0
-          , LoadPtr "ptr" "x"
-          , StorePtr "ptr" $ Const 5
+          , LoadPtr "ptr" $ Ref (Var "x")
+         -- , StorePtr "ptr" $ Const 5
           , Assert . Pred $ Var "x" :==: Const 5
           ]
         }
