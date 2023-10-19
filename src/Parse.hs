@@ -168,16 +168,6 @@ statement (CallStmt "modifies" [Variable var]) = do
   addModifies var  
   return $ skip
  
--- Load (y := *x) 
--- statement (LoadStmt lhs rhs) = do
---   rhs' <- expr rhs -- parsing rhs into nano
---   return (Load lhs rhs')  -- load into nano
-
-  --  x* := e (Storee)
-statement (AssignStmt nodeVar (NodeValue "value" nodeValueExpr)) = do
-  nodeValueExpr <- expr nodeValueExpr
-  return $ Nano.Store nodeVar nodeValueExpr
-
 -- Empty
 statement EmptyStmt = return skip
 
@@ -337,7 +327,7 @@ predicate _ = empty
 -- parser will produce by running it separately. This way, you could find
 -- the culprit expression.
 
-expr :: MonadNano String m => JS.Expression a -> m (Expr String)
+expr :: MonadNano String m => JS.Expression a -> m (Expr String)  -- this needs to be updated
 expr (Variable x) = return (Var x) -- js var into nano
 expr (Int i) = return (Const (fromIntegral i)) -- js integer into nano
 
@@ -455,5 +445,5 @@ pattern Decl var expr <- JS.VarDecl _ (JS.Id _ var) (Just expr)
 -- pattern AccessNodeValue :: String -> String -> JS.Expression a
 -- pattern AccessNodeValue node <- JS.LDot _ (JS.LVar _ node) (JS.Id _ "value")
 
-pattern NodeValue :: String -> JS.Expression a -> JS.Expression a
-pattern NodeValue nodeVar obj <- JS.DotRef _ obj (JS.Id _ nodeVar)
+-- pattern NodeValue :: String -> JS.Expression a -> JS.Expression a
+-- pattern NodeValue nodeVar obj <- JS.DotRef _ obj (JS.Id _ nodeVar)
