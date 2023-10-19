@@ -60,7 +60,7 @@ toZ3Pred varMap (e1 :<=: e2) = do
   Z3.mkGe e2' e1'
 
 -- look up pattern match for referencing and dereferencing
-toZ3Exp :: Map.Map String Z3.AST -> Expr String -> Z3 Z3.AST
+toZ3Exp :: Map.Map String Z3.AST -> Expr String -> Z3 Z3.AST -- this needs to be updated
 toZ3Exp varMap (Var v) = return $ fromJust $ Map.lookup v varMap
 toZ3Exp varMap (Array a) = return $ fromJust $ Map.lookup a varMap
 toZ3Exp _ (Const n) = Z3.mkInteger n
@@ -90,6 +90,14 @@ toZ3Exp varMap (Store a i v) = do
   i' <- toZ3Exp varMap i
   v' <- toZ3Exp varMap v
   Z3.mkStore a' i' v'
+-- toZ3Exp varMap (LoadPtr a1 a2) = do
+--   a1' <- toZ3Exp varMap a1
+--   a2' <- toZ3Exp varMap a2
+--   Z3.mkLoadPtr a1' a2' 
+-- toZ3Exp varMap (StorePtr a1 e1) = do
+--   a1' <- toZ3Exp varMap a1
+--   e1' <- toZ3Exp varMap e1
+--   Z3.mkStorePtr a1' e1' 
 
 mkVar :: Expr String -> Z3.Z3 (String, Z3.AST)
 mkVar (Var x) = do

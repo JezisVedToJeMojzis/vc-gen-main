@@ -18,8 +18,8 @@ data Expr a
   | BinOp BinOp (Expr a) (Expr a)
   | Select (Expr a) (Expr a)
   | Store (Expr a) (Expr a) (Expr a)
-  | LoadPtr a a --  y := ~x (load) 
-  | StorePtr a (Expr a)   --  !x := e (store)
+  -- | LoadPtr a a --  y := ~x (load) 
+  -- | StorePtr a (Expr a)   --  !x := e (store)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 -- | Binary expression operations.
