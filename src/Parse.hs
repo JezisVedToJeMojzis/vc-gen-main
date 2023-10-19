@@ -90,6 +90,11 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
   expr' <- expr expression  -- parsing js expr into nano expr
   return $ Return expr'  -- nano return
 
+-- Variable declaration
+statement (DeclStmt [PointerRef var stmt]) = do
+  stmt' <- expr stmt
+  return (LoadPtr var stmt')
+
 -- Assignment
 statement (AssignStmt var rhs) = do
   case rhs of
@@ -168,10 +173,7 @@ statement (CallStmt "modifies" [Variable var]) = do
   addModifies var  
   return $ skip
  
- -- LoadPtr
-statement (LoadStmt var rhs) = do
-  rhs' <- expr1 rhs  
-  return $ LoadPtr var rhs'  
+
 
 -- Empty
 statement EmptyStmt = return skip
@@ -432,6 +434,10 @@ pattern AssignStmt var rhs <- AssignStmt' (JS.LVar _ var) rhs
 
 pattern ArrAsnStmt :: String -> JS.Expression a -> JS.Expression a -> JS.Statement a
 pattern ArrAsnStmt array index rhs <- AssignStmt' (JS.LBracket _ (Variable array) index) rhs
+
+-- Separate pattern for handling expressions with a + in front of the integer
+pattern PointerRef :: String -> JS.Expression a -> JS.VarDecl a
+pattern PointerRef var expr <- JS.VarDecl _ (JS.Id _ var) (Just (JS.PrefixExpr _ JS.PrefixPlus expr))
 
 pattern DeclStmt :: [JS.VarDecl a] -> JS.Statement a
 pattern DeclStmt statements <- JS.VarDeclStmt _ statements
