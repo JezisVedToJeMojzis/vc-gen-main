@@ -6,5 +6,5 @@ function pointer() {
 
     y = *ptr;  // Use the pointer to access the value of x and assign it to y
 
-    assert(y == 5)
+    assert(y == 5);
 }
