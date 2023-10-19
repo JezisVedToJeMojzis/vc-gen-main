@@ -90,7 +90,7 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
   expr' <- expr expression  -- parsing js expr into nano expr
   return $ Return expr'  -- nano return
 
--- Variable declaration
+-- Pointer referencing
 statement (DeclStmt [PointerRef var stmt]) = do
   stmt' <- expr stmt
   return (LoadPtr var stmt')
