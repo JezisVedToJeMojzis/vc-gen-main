@@ -65,10 +65,10 @@ data Statement a
   -- ^ x := f(e0, .., eN)
   | Havoc a
   -- ^ havoc
-  -- | Load a a
-  -- -- ^ y := *x (load) -- Add these as an expression instead of statement
-  -- | Store a (Expr a)
-  -- -- ^ *x := e (store)
+  | Load a a
+  -- ^ y := *x (load) 
+  | Store a (Expr a)
+  -- ^ *x := e (store)
   deriving (Eq, Ord, Show)
 
 instance Semigroup (Statement a) where
