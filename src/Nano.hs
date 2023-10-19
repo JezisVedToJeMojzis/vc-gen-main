@@ -65,9 +65,9 @@ data Statement a
   -- ^ x := f(e0, .., eN)
   | Havoc a
   -- ^ havoc
-  | Load a a
+  | LoadPtr a a
   -- ^ y := *x (load) 
-  | Store a (Expr a)
+  | StorePtr a (Expr a)
   -- ^ *x := e (store)
   deriving (Eq, Ord, Show)
 
