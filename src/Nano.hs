@@ -193,6 +193,23 @@ instance VCGen Statement where
   vcgen (ArrAsn array index expr) post = do
     let pre = subst array (Store (Array array) index expr) post
     return pre
+  
+  -- Havoc: This is similar to a forall. We need to universally quantify the variable and update the postcondition accordingly.
+  vcgen (Havoc var) post = do
+    let pre = Forall var post
+    return pre
+
+    
+  -- vcgen (Havoc var) post = do
+  --   let havocVars = var -- Assuming var is a single variable to be universally quantified
+  --   let preHavoc = foldr (\v acc -> Forall [v] acc) (post :: Logic String) havocVars -- Ensure the type is consistent
+  --   return preHavoc
+
+  -- Return
+  vcgen (Return expr) post = do
+    func <- currentFunc
+    let post' = subst result expr (fpost func)
+    return post'
 
   -- vcgen (LoadPtr ptr expr) post = do
   --   return skip
@@ -200,11 +217,6 @@ instance VCGen Statement where
   -- vcgen (StorePtr ptr expr) post = do
   --   return skip
 
-  -- -- Return
-  -- vcgen (Return expr) post = do
-  --   let pre = subst result expr post -- Substitute the result variable with the expression
-  --   return pre
- 
  -- Catch statement
   vcgen _ _ = return false
 
