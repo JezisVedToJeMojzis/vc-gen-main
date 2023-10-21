@@ -191,7 +191,8 @@ instance VCGen Statement where
 
   -- Array Assignment
   vcgen (ArrAsn array index expr) post = do
-    return (subst array (Store (Array array) index expr) post)
+    let pre = subst array (Store (Array array) index expr) post
+    return pre
 
   -- vcgen (LoadPtr ptr expr) post = do
   --   return skip
