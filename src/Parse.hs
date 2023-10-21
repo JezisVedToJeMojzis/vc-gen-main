@@ -84,10 +84,23 @@ convertIdToString (JS.Id _ s) = s
 exprToString :: Expr String -> String
 exprToString (StrLit str) = str
 
--- Add more cases for other expression types as needed
 
--- Default case for unsupported expression types
-exprToString _ = error "Unsupported expression type"
+-- pattern Lol' :: JS.LValue a -> JS.Expression a -> JS.Statement a
+-- pattern Lol' lhs rhs = JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssignSpRShift lhs rhs)
+
+-- pattern AssignStmtt :: String -> JS.Expression a -> JS.Statement a
+-- pattern AssignStmtt var rhs <- Lol' (JS.LVar _ var) rhs
+getStringFromJSLValue :: JS.LValue a -> String
+getStringFromJSLValue (JS.LVar _ ident) = ident
+getStringFromJSLValue _ = "Unsupported" -- Handle other cases as needed
+
+getStringFromJSExpression :: JS.Expression a -> String
+getStringFromJSExpression (JS.StringLit _ s) = s
+--getStringFromJSExpression (JS.VarRef _ (JS.Id _ name)) = name
+-- -- Add more cases as needed for other expression types
+getStringFromJSExpression _ = "Unsupported Expression"  -- Handle other cases as needed
+
+
 
 statement :: MonadNano String m => JS.Statement a -> m (Statement String)
 -- EmptyStmt a
@@ -118,7 +131,19 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
 --       rhs'' <- expr rhs
 --       return $ StorePtr var rhs'' 
 
-
+-- statement (JS.ExprStmt _ (JS.AssignExpr _ op var rhs)) = do
+--     case op of
+--         JS.OpAssignSpRShift -> do
+--             rhs' <- expr rhs
+--             return $ LoadPtr (getStringFromJSLValue var) rhs'
+--         JS.OpAssignLShift -> do
+--             rhs' <- expr rhs
+--             return $ Seq [StorePtr (getStringFromJSLValue var) rhs']
+--         JS.OpAssign -> do
+--             rhs' <- expr rhs
+--             return $ Assign (getStringFromJSLValue var) rhs'
+--         _ -> return skip
+    
 -- Assignment
 statement (AssignStmt var rhs) = do   
   let ptr =
@@ -397,9 +422,9 @@ expr (Minus e) = do -- for e.g. -3
    e' <- expr e -- convert into nano
    return  (BinOp Sub (Const 0) e') -- 0 - e' = - e'
 
-expr (Plus e) = do -- for e.g. -3
-   e' <- expr e -- convert into nano
-   return (Ref e') -- 0 - e' = - e'
+-- expr (Plus e) = do -- for e.g. -3
+--    e' <- expr e -- convert into nano
+--    return (Ref e') -- 0 - e' = - e'
 
 expr (JS.BracketRef _ (JS.VarRef _ (JS.Id _ array)) index) = do -- for arrays e.g. x[i]
   array' <- return (Array array) -- nano array
@@ -408,13 +433,9 @@ expr (JS.BracketRef _ (JS.VarRef _ (JS.Id _ array)) index) = do -- for arrays e.
 
 expr _ = empty
 
-expr1 :: MonadNano String m => JS.Expression a -> m (Expr String)  -- this needs to be updated
-
-expr1 (Plus e) = do -- for e.g. -3
-   e' <- expr e -- convert into nano
-   return (Ref e') -- 0 - e' = - e'
-
-expr1 _ = empty
+-- expr1 :: MonadNano String m => JS.Expression a -> m (Expr String)  -- this needs to be updated
+-- expr1 (Variable x) = return (Ref x)
+-- expr1 _ = empty
 
 -- | You can use this to pattern match on a variable.
 -- For more info on this, search for the PatternSynonyms language pragma.
@@ -469,6 +490,12 @@ pattern ReturnStmt expr <- JS.ReturnStmt _ (Just expr)
 -- this directly.
 pattern AssignStmt' :: JS.LValue a -> JS.Expression a -> JS.Statement a
 pattern AssignStmt' lhs rhs <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign lhs rhs)
+
+
+-- pattern DiffOpAssign :: JS.LValue a -> JS.Expression a -> JS.Statement a
+-- pattern DiffOpAssign lhs rhs <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssignSpRShift lhs rhs)
+
+
 
 -- | You still have to distinguish between an expression or function call on
 -- the rhs when using this pattern.
