@@ -189,6 +189,17 @@ instance VCGen Statement where
     let pre = subst var expr post
     return pre
 
+  -- Array Assignment
+  vcgen (ArrAsn array index expr) post = do
+    let pre = subst array (Store (Array array) index expr) post
+    return pre
+
+  -- vcgen (LoadPtr ptr expr) post = do
+  --   return skip
+
+  -- vcgen (StorePtr ptr expr) post = do
+  --   return skip
+
   -- -- Return
   -- vcgen (Return expr) post = do
   --   let pre = subst result expr post -- Substitute the result variable with the expression
@@ -212,5 +223,6 @@ check nano = do
   let runner fun = runWriter . flip runReaderT (Info (fname fun) progmap) . flip evalStateT 0
   let check' fun = let (pre, vcs) = runner fun $ vcgen fun true in pre <> vcs
   let vcs = check' <$> nano
+  mapM_ (putStrLn . show) vcs -- for debugging
   valid <- mapM SMT.valid vcs
   return $ Prelude.and valid
