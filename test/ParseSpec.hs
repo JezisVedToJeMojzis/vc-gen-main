@@ -110,7 +110,7 @@ rubric = do
         , fbody = Seq
           [ Assign "x" $ Const 0
           , Assign "ptr" $ Const 0
-          , LoadPtr "ptr" $ Ref (Var "x")
+          , LoadPtr "x" $ Var "ptr - test"
           , StorePtr "ptr" $ Const 5
           , Assert . Pred $ Var "x" :==: Const 5
           ]

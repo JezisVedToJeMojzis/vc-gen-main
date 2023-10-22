@@ -1,11 +1,9 @@
 function pointer() {
-    var x = 0;
-    // * = ! and ~ = &
-    var ptr = 0; // reference - y is made to point to the memory location of x
+    var x = 0; // expression
+    var ptr = 0; // pointer 
 
-    ptr = +x;
-    
-    ptr = ~5; // Dereferences the pointer y, and sets the value at the memory location pointed to by y (which is x) to 5 
+    x >>= ptr // mapping x to pointer ptr
+    ptr <<= 5; // storing value 5 into ptr
 
     assert(x == 5);
 }

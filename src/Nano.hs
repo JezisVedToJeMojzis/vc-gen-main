@@ -194,11 +194,15 @@ instance VCGen Statement where
     let pre = subst array (Store (Array array) index expr) post
     return pre
 
-  -- vcgen (LoadPtr ptr expr) post = do
-  --   return skip
+  -- Load
+  -- vcgen (LoadPtr expr ptr) post = do -- expr = x / ptr = pointer
+  --    let pre = subst expr (Select (Array array) ptr)  -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) -- need to figure out the (Array array)
+  --    return pre 
 
-  -- vcgen (StorePtr ptr expr) post = do
-  --   return skip
+  -- Store
+  -- vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
+  --    let pre = subst array (Store (Array array) ptr expr) post -- precon - here we need to store expr to array on position of ptr (*y = e => array[y] = e) -- need to figure out array
+  --    return pre
 
   -- -- Return
   -- vcgen (Return expr) post = do

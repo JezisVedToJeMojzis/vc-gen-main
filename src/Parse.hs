@@ -81,9 +81,6 @@ helpWDecl _ = return $ skip -- else Seq [] (empty sequence of stmts)
 convertIdToString :: JS.Id a -> String
 convertIdToString (JS.Id _ s) = s
 
-exprToString :: Expr String -> String
-exprToString (StrLit str) = str
-
 
 -- pattern Lol' :: JS.LValue a -> JS.Expression a -> JS.Statement a
 -- pattern Lol' lhs rhs = JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssignSpRShift lhs rhs)
@@ -92,13 +89,9 @@ exprToString (StrLit str) = str
 -- pattern AssignStmtt var rhs <- Lol' (JS.LVar _ var) rhs
 getStringFromJSLValue :: JS.LValue a -> String
 getStringFromJSLValue (JS.LVar _ ident) = ident
-getStringFromJSLValue _ = "Unsupported" -- Handle other cases as needed
+getStringFromJSLValue _ = "skip "
 
-getStringFromJSExpression :: JS.Expression a -> String
-getStringFromJSExpression (JS.StringLit _ s) = s
---getStringFromJSExpression (JS.VarRef _ (JS.Id _ name)) = name
--- -- Add more cases as needed for other expression types
-getStringFromJSExpression _ = "Unsupported Expression"  -- Handle other cases as needed
+
 
 
 
@@ -119,7 +112,7 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
 -- -- Pointer dereferencing
 -- statement (AssignStmt var (JS.PrefixExpr _ JS.PrefixBNot stmt)) = do
 --   stmt' <- expr stmt
---   return (StorePtr var stmt')
+--   return (StorePtr var stmt'
 
 -- Pointer stuff
 -- statement (AssignStmt var rhs) = do
@@ -130,56 +123,44 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
 --     JS.PrefixExpr _ JS.PrefixBNot rhs -> do -- dereference
 --       rhs'' <- expr rhs
 --       return $ StorePtr var rhs'' 
-
--- statement (JS.ExprStmt _ (JS.AssignExpr _ op var rhs)) = do
---     case op of
---         JS.OpAssignSpRShift -> do
---             rhs' <- expr rhs
---             return $ LoadPtr (getStringFromJSLValue var) rhs'
---         JS.OpAssignLShift -> do
---             rhs' <- expr rhs
---             return $ Seq [StorePtr (getStringFromJSLValue var) rhs']
---         JS.OpAssign -> do
---             rhs' <- expr rhs
---             return $ Assign (getStringFromJSLValue var) rhs'
---         _ -> return skip
     
 -- Assignment
 statement (AssignStmt var rhs) = do   
-  let ptr =
-        if isPrefixPlus rhs -- checking for our pointer (var ptr) and storing it
-          then var
-          else undefined
-  let ref =
-        if isPrefixPlus rhs -- checking for our ref var (var x) and storing it
-          then rhs
-          else undefined   
   case rhs of        
     JS.CallExpr _ (JS.VarRef _ fName) args -> do
       args' <- mapM expr args
       return $ AppAsn var (convertIdToString fName) args'  -- extract the string value and assign to variable
-    JS.PrefixExpr _ JS.PrefixPlus rhs -> do -- reference
-      rhs' <- expr rhs
-      return $ LoadPtr var rhs'  
-    JS.PrefixExpr _ JS.PrefixBNot rhs -> do -- dereference
-      rhs' <- expr rhs
-    --  ref' <- expr ptr
-      return $ Seq [StorePtr var rhs'] --Seq [StorePtr var rhs', Assign ref' rhs']
+    -- JS.PrefixExpr _ JS.PrefixPlus rhs -> do -- reference
+    --   rhs' <- expr rhs
+    --   return $ LoadPtr var rhs'  
+    -- JS.PrefixExpr _ JS.PrefixBNot rhs -> do -- dereference
+    --   rhs' <- expr rhs
+    -- --  ref' <- expr ptr
+    --   return $ Seq [StorePtr var rhs'] --Seq [StorePtr var rhs', Assign ref' rhs']
     _ -> do
       rhs' <- expr rhs  -- parse rhs into nano
       return $ Assign var rhs'  -- rhs is assigned to var name
-  where
-    isPrefixPlus (JS.PrefixExpr _ JS.PrefixPlus _) = True
-    isPrefixPlus _ = False
-    -- isPrefixNeg (JS.PrefixExpr _ JS.PrefixBNot _) = True
-    -- isPrefixNeg _ = False
-    
-    
+
 -- Array Assignment
 statement (ArrAsnStmt array index rhs) = do
   index' <- expr index
   rhs' <- expr rhs
   return (ArrAsn array index' rhs')
+
+-- Pointers
+statement (JS.ExprStmt _ (JS.AssignExpr _ op var rhs)) = do
+    case op of
+        JS.OpAssignSpRShift -> do -- >>=
+            rhs' <- expr rhs
+            return $ LoadPtr (getStringFromJSLValue var) rhs'
+        JS.OpAssignLShift -> do -- <<=
+            rhs' <- expr rhs
+            return $ StorePtr (getStringFromJSLValue var) rhs'
+        -- JS.OpAssign -> do -- =
+        --     rhs' <- expr rhs
+        --     return $ Assign (getStringFromJSLValue var) rhs'
+        _ -> return skip
+    
   
 -- Variable declaration
 statement (DeclStmt [Decl var stmt]) = do -- VarDeclStmt a [VarDecl a]	// var x, y=42;, spec 12.2
