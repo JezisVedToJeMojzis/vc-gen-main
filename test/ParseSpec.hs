@@ -100,7 +100,7 @@ rubric = do
     let check file func = dpasses ("correctly parses " <> file) $ do
           nano file `shouldReturn` return func
 
-    check "programs/project/pointer.js" -- POINTER.JS
+    check "programs/pos/pointer.js" -- POINTER.JS
       [ Function
         { fname = "pointer"
         , fargs = []
@@ -110,7 +110,7 @@ rubric = do
         , fbody = Seq
           [ Assign "x" $ Const 0
           , Assign "ptr" $ Const 0
-          , LoadPtr "x" $ Var "ptr - test"
+          , LoadPtr "x" $ Var "ptr"
           , StorePtr "ptr" $ Const 5
           , Assert . Pred $ Var "x" :==: Const 5
           ]

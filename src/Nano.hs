@@ -120,6 +120,10 @@ fresh = state (\s -> ("$fresh" <> show s, s + 1))
 result :: String
 result = "$result"
 
+-- | Global arr
+memory ::  String
+memory = "$memory"
+
 -- | Generate verification conditions from this structure
 class VCGen f where
   vcgen :: MonadVCGen String m => f String -> Logic String -> m (Logic String)
@@ -212,13 +216,13 @@ instance VCGen Statement where
     return post'
 
   -- Load
-  -- vcgen (LoadPtr expr ptr) post = do -- expr = x / ptr = pointer
-  --    let pre = subst expr (Select (Array array) ptr)  -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) -- need to figure out the (Array array)
-  --    return pre 
+  vcgen (LoadPtr expr ptr) post = do -- expr = x / ptr = pointer
+     let pre = subst expr (Select (Array memory) ptr) post  -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) -- need to figure out the (Array array)
+     return pre 
 
   -- Store
   -- vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
-  --    let pre = subst array (Store (Array array) ptr expr) post -- precon - here we need to store expr to array on position of ptr (*y = e => array[y] = e) -- need to figure out array
+  --    let pre = subst memory (Store (Array memory) ptr expr) post -- precon - here we need to store expr to array on position of ptr (*y = e => array[y] = e) -- need to figure out array
   --    return pre
 
  -- Catch statement
