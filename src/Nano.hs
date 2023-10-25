@@ -131,6 +131,15 @@ memory1 = "$memory1"
 stringToExpr :: String -> Expr String
 stringToExpr str = Var str
 
+wrapExpr :: Expr String -> Expr (Expr String)
+wrapExpr e = Var e  
+
+toLogicExpr :: Logic String -> Logic (Expr String)
+toLogicExpr = fmap Var
+
+toLogicString :: Logic (Expr String) -> Logic String
+toLogicString = fmap (\(Var str) -> str)
+
 -- | Generate verification conditions from this structure
 class VCGen f where
   vcgen :: MonadVCGen String m => f String -> Logic String -> m (Logic String)
@@ -229,9 +238,13 @@ instance VCGen Statement where
 
   -- Store
   vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
-     let memoryIndex = Select (Array memory) (Var ptr)
-     let pre = subst memory1 (Store (Array memory1) (stringToExpr ptr) expr) post -- precon - here we need to store expr to array on position of ptr (*y = e => array[y] = e) 
-     return pre
+     let memoryIndex = Select (Array memory) (Var ptr) -- array[y] = x
+     
+     let pre = subst memory1 (Store (Array memory1) (Var ptr) expr) post -- precon - here we need to store expr to array on position of ptr (*y = e => array[y] = e) 
+     let memory1Index = Select (Array memory1) (Var ptr) -- array[y] = e
+
+     let assignEtoX = subst memoryIndex (wrapExpr expr) (toLogicExpr post)  -- this isnt good solution, we need to come up with how to assign the E to X so it works. Also how to check if the indexes of the two global arrays match.
+     return assignEtoX
 
  -- Catch statement
   vcgen _ _ = return false
