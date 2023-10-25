@@ -124,6 +124,13 @@ result = "$result"
 memory ::  String
 memory = "$memory"
 
+-- | Global arr 2
+memory1 ::  String
+memory1 = "$memory1"
+
+stringToExpr :: String -> Expr String
+stringToExpr str = Var str
+
 -- | Generate verification conditions from this structure
 class VCGen f where
   vcgen :: MonadVCGen String m => f String -> Logic String -> m (Logic String)
@@ -217,13 +224,14 @@ instance VCGen Statement where
 
   -- Load
   vcgen (LoadPtr expr ptr) post = do -- expr = x / ptr = pointer
-     let pre = subst expr (Select (Array memory) ptr) post  -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) -- need to figure out the (Array array)
+     let pre = subst memory (Store (Array memory) ptr (stringToExpr expr)) post -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) 
      return pre 
 
   -- Store
-  -- vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
-  --    let pre = subst memory (Store (Array memory) ptr expr) post -- precon - here we need to store expr to array on position of ptr (*y = e => array[y] = e) -- need to figure out array
-  --    return pre
+  vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
+     let memoryIndex = Select (Array memory) (Var ptr)
+     let pre = subst memory1 (Store (Array memory1) (stringToExpr ptr) expr) post -- precon - here we need to store expr to array on position of ptr (*y = e => array[y] = e) 
+     return pre
 
  -- Catch statement
   vcgen _ _ = return false
