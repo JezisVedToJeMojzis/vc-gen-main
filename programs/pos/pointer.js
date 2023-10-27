@@ -1,5 +1,5 @@
 function pointer() {
-    var x = 0; // expression
+    x[1] = 0; // expression
     var ptr = 0; // pointer 
 
     x >>= ptr // mapping x to pointer ptr

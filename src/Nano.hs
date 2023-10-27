@@ -236,7 +236,7 @@ instance VCGen Statement where
 
   -- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
   vcgen (LoadPtr lhs rhs) post = do
-    let pre = subst memory (Store (Array memory) rhs (stringToExpr lhs)) post -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) 
+    let pre = subst memory (Store (Array memory) rhs (Var lhs)) post -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) 
     return pre 
   
   -- vcgen (LoadPtr expr ptr) post = do -- expr = x / ptr = pointer
