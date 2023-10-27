@@ -131,14 +131,14 @@ memory1 = "$memory1"
 stringToExpr :: String -> Expr String
 stringToExpr str = Var str
 
-wrapExpr :: Expr String -> Expr (Expr String)
-wrapExpr e = Var e  
+-- wrapExpr :: Expr String -> Expr (Expr String)
+-- wrapExpr e = Var e  
 
-toLogicExpr :: Logic String -> Logic (Expr String)
-toLogicExpr = fmap Var
+-- toLogicExpr :: Logic String -> Logic (Expr String)
+-- toLogicExpr = fmap Var
 
-toLogicString :: Logic (Expr String) -> Logic String
-toLogicString = fmap (\(Var str) -> str)
+-- toLogicString :: Logic (Expr String) -> Logic String
+-- toLogicString = fmap (\(Var str) -> str)
 
 -- | Generate verification conditions from this structure
 class VCGen f where
@@ -231,20 +231,29 @@ instance VCGen Statement where
     let post' = subst result expr (fpost func)
     return post'
 
-  -- Load
-  vcgen (LoadPtr expr ptr) post = do -- expr = x / ptr = pointer
-     let pre = subst memory (Store (Array memory) ptr (stringToExpr expr)) post -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) 
-     return pre 
+  -- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
+  vcgen (LoadPtr lhs rhs) post = do
+    let pre = subst memory (Store (Array memory) rhs (stringToExpr lhs)) post -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) 
+    return pre 
+  
+  -- vcgen (LoadPtr expr ptr) post = do -- expr = x / ptr = pointer
+  --    let pre = subst memory (Store (Array memory) ptr (stringToExpr expr)) post -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) 
+  --    return pre 
 
-  -- Store
-  vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
-     let memoryIndex = Select (Array memory) (Var ptr) -- array[y] = x
-     
-     let pre = subst memory1 (Store (Array memory1) (Var ptr) expr) post -- precon - here we need to store expr to array on position of ptr (*y = e => array[y] = e) 
-     let memory1Index = Select (Array memory1) (Var ptr) -- array[y] = e
+  -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
+  vcgen (StorePtr lhs rhs) post = do -- ptr = pointer / expr = e
+    let memoryIndex = Select (Array memory) (Var lhs) -- Get index of lhs (x)
+    let pre = subst memory (Store (Array memory) memoryIndex rhs) post -- Substitute the array "memory" by the array where position x is set to e
+    return pre
 
-     let assignEtoX = subst memoryIndex (wrapExpr expr) (toLogicExpr post)  -- this isnt good solution, we need to come up with how to assign the E to X so it works. Also how to check if the indexes of the two global arrays match.
-     return assignEtoX
+  -- vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
+  --   let memoryIndex = Select (Array memory) (Var ptr) -- array[y] = x
+    
+  --   let pre = subst memory1 (Store (Array memory1) (Var ptr) expr) post -- precon - here we need to store expr to array on position of ptr (*y = e => array[y] = e) 
+  --   let memory1Index = Select (Array memory1) (Var ptr) -- array[y] = e
+
+  --   let assignEtoX = subst memoryIndex (wrapExpr expr) (toLogicExpr post)  -- this isnt good solution, we need to come up with how to assign the E to X so it works. Also how to check if the indexes of the two global arrays match.
+  --   return assignEtoX
 
  -- Catch statement
   vcgen _ _ = return false
