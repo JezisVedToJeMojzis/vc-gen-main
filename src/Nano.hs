@@ -131,6 +131,9 @@ memory1 = "$memory1"
 stringToExpr :: String -> Expr String
 stringToExpr str = Var str
 
+exprToString :: Expr String -> String
+exprToString (Var str) =  str
+
 -- wrapExpr :: Expr String -> Expr (Expr String)
 -- wrapExpr e = Var e  
 
@@ -242,8 +245,8 @@ instance VCGen Statement where
 
   -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
   vcgen (StorePtr lhs rhs) post = do -- ptr = pointer / expr = e
-    let memoryIndex = Select (Array memory) (Var lhs) -- Get index of lhs (x)
-    let pre = subst memory (Store (Array memory) memoryIndex rhs) post -- Substitute the array "memory" by the array where position x is set to e
+    let memoryIndex = Select (Array memory) (Var lhs) -- Get x
+    let pre = subst memory1 (Store (Array (exprToString memoryIndex)) rhs rhs) post -- x[5] = 5?
     return pre
 
   -- vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
