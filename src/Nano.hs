@@ -122,11 +122,14 @@ result = "$result"
 
 -- | Global arr
 memory ::  String
-memory = "$memory[0] = 1"
+memory = "$memory"
 
 -- | Global arr 2
 memory1 ::  String
-memory1 = "x"
+memory1 = "$memory1"
+
+x :: String
+x = "x"
 
 stringToExpr :: String -> Expr String
 stringToExpr str = Var str
@@ -236,27 +239,17 @@ instance VCGen Statement where
 
   -- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
   vcgen (LoadPtr lhs rhs) post = do
-    let pre = subst memory (Store (Array memory) rhs (Var lhs)) post -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) 
-    return pre 
+    let pre = subst memory (Store (Array memory) rhs (Var lhs)) post --  Store (Array "$memory") (Var "ptr") (Var "x") 
+    --let assignXtoMemory1 = subst memory1 (Var lhs) post --  assign x to memory1
+   -- let kkt = and [pre, assignXtoMemory1]
+    return pre
   
-  -- vcgen (LoadPtr expr ptr) post = do -- expr = x / ptr = pointer
-  --    let pre = subst memory (Store (Array memory) ptr (stringToExpr expr)) post -- precon - here we need to create array with ptr as index (x = *y => array[y] = x) 
-  --    return pre 
-
   -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
   vcgen (StorePtr lhs rhs) post = do -- ptr = pointer / expr = e
-    let memoryIndex = Select (Array memory) (Var lhs) -- Get x
-    let pre = subst memory1 (Store (Array memory1) rhs rhs) post --  x[5] = 5 (memory1 = x)
+    let pre = subst x (Select (Array memory) (Var lhs)) post  -- Get x into memoryIndex
+   -- let pre = subst x rhs post -- subst x with e (works with x but doesnt work with anything else)
     return pre
 
-  -- vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
-  --   let memoryIndex = Select (Array memory) (Var ptr) -- array[y] = x
-    
-  --   let pre = subst memory1 (Store (Array memory1) (Var ptr) expr) post -- precon - here we need to store expr to array on position of ptr (*y = e => array[y] = e) 
-  --   let memory1Index = Select (Array memory1) (Var ptr) -- array[y] = e
-
-  --   let assignEtoX = subst memoryIndex (wrapExpr expr) (toLogicExpr post)  -- this isnt good solution, we need to come up with how to assign the E to X so it works. Also how to check if the indexes of the two global arrays match.
-  --   return assignEtoX
 
  -- Catch statement
   -- vcgen _ _ = return false
