@@ -246,7 +246,7 @@ instance VCGen Statement where
   
   -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
   vcgen (StorePtr lhs rhs) post = do -- ptr = pointer / expr = e
-    let pre = subst memory1 (Select (Array memory) (Var lhs)) post  -- Select (Store (Array "$memory") (Var "ptr") (Var "x")) (Var "ptr")
+    let pre = subst memory1 (Select (Array memory) (Var lhs)) post  -- Select (Store (Array "$memory") (Var "ptr") (Var "x")) (Var "ptr") -- stored in memory1
     --let pre = subst x rhs post -- subst x with e 
     -- We need to somehow substitute the Var x in pointer.js, it works only with custom made x (check below memory1)
     return pre
