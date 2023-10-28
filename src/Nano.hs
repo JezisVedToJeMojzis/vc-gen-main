@@ -246,7 +246,7 @@ instance VCGen Statement where
   -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
   vcgen (StorePtr lhs rhs) post = do -- ptr = pointer / expr = e
     let memoryIndex = Select (Array memory) (Var lhs) -- Get x
-    let pre = subst memory1 (Store (Array memory1) rhs rhs) post -- subst ptr[5] with ptr[5] = 5
+    let pre = subst memory1 (Store (Array memory1) rhs rhs) post --  x[5] = 5 (memory1 = x)
     return pre
 
   -- vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
