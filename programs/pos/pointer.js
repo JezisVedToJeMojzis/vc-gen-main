@@ -5,5 +5,5 @@ function pointer() {
     x >>= ptr // mapping x to pointer ptr
     ptr <<= 5; // storing value 5 into ptr
 
-    assert(ptr[5]==5);
+    assert(x[5]==5);
 }

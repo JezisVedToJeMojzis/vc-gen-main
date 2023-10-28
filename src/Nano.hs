@@ -122,11 +122,11 @@ result = "$result"
 
 -- | Global arr
 memory ::  String
-memory = "$memory"
+memory = "$memory[0] = 1"
 
 -- | Global arr 2
 memory1 ::  String
-memory1 = "$memory1"
+memory1 = "x"
 
 stringToExpr :: String -> Expr String
 stringToExpr str = Var str
@@ -246,7 +246,7 @@ instance VCGen Statement where
   -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
   vcgen (StorePtr lhs rhs) post = do -- ptr = pointer / expr = e
     let memoryIndex = Select (Array memory) (Var lhs) -- Get x
-    let pre = subst lhs (Store (Array lhs) rhs rhs) post -- subst ptr[5] with ptr[5] = 5
+    let pre = subst memory1 (Store (Array memory1) rhs rhs) post -- subst ptr[5] with ptr[5] = 5
     return pre
 
   -- vcgen (StorePtr ptr expr) post = do -- ptr = pointer / expr = e
