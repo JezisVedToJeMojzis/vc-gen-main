@@ -166,10 +166,13 @@ invariant(R);
 
 ### To simulate pointers in Javascript we decided to use:
 
-OpAssignSpRShift - for referencing
+OpAssignSpRShift - for referencing   
+
+
 OpAssignLShift - for dereferencing
 
 ### Tested JS code: 
+Pointer ptr points to variable x. If 5 is assigned to ptr then it is assigned to x as well.
 ```
 function pointer() {
     x >>= ptr; // mapping x to pointer ptr
