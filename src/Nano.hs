@@ -333,7 +333,7 @@ instance VCGen Statement where
 
 
  -- Catch statement
- -- vcgen _ _ = return false
+  vcgen _ _ = return false
 
 instance VCGen Function where
   vcgen func post' = do

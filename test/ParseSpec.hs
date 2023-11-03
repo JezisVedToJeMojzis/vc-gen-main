@@ -100,7 +100,7 @@ rubric = do
     let check file func = dpasses ("correctly parses " <> file) $ do
           nano file `shouldReturn` return func
 
-    check "programs/pos/pointer.js" -- POINTER.JS
+    check "programs/pos/pointer.js" 
       [ Function
         { fname = "pointer"
         , fargs = []
