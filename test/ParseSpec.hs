@@ -108,14 +108,15 @@ rubric = do
         , fpost = true
         , fmods = []
         , fbody = Seq
-          [ Assign "x" $ Const 0
-          , Assign "ptr" $ Const 0
-          , LoadPtr "x" $ Var "ptr"
-          , StorePtr "ptr" $ Const 5
-          , Assert . Pred $ Var "x" :==: Const 5
+          [ 
+            LoadPtr "x" "ptr"
+          , StorePtr "ptr" (Var "x") (Const 5)
+          , Assert . Pred $ (Var "x") :==: (Const 5)
           ]
         }
       ]
+
+      
 
     check "programs/pos/abs.js"
       [ Function

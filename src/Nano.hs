@@ -65,9 +65,9 @@ data Statement a
   -- ^ x := f(e0, .., eN)
   | Havoc a
   -- ^ havoc
-  | LoadPtr a (Expr a)
+  | LoadPtr a  a
   -- ^ y := *x (load) 
-  | StorePtr a (Expr a)
+  | StorePtr a (Expr a) (Expr a)
   -- ^ *x := e (store)
   deriving (Eq, Ord, Show)
 
@@ -121,12 +121,8 @@ result :: String
 result = "$result"
 
 -- | Global arr
-memory ::  String
+memory :: String
 memory = "$memory"
-
--- | Global arr 2
-memory1 ::  String
-memory1 = "$memory1"
 
 x :: String
 x = "x"
@@ -137,14 +133,6 @@ stringToExpr str = Var str
 exprToString :: Expr String -> String
 exprToString (Var str) = str
 
--- wrapExpr :: Expr String -> Expr (Expr String)
--- wrapExpr e = Var e  
-
--- toLogicExpr :: Logic String -> Logic (Expr String)
--- toLogicExpr = fmap Var
-
--- toLogicString :: Logic (Expr String) -> Logic String
--- toLogicString = fmap (\(Var str) -> str)
 
 -- | Generate verification conditions from this structure
 class VCGen f where
@@ -236,24 +224,116 @@ instance VCGen Statement where
     func <- currentFunc
     let post' = subst result expr (fpost func)
     return post'
-
+    
+  -- 1.
   -- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
-  vcgen (LoadPtr lhs rhs) post = do
-    --let pre = subst memory (Store (Array memory) rhs (Var lhs)) post --  Store (Array "$memory") (Var "ptr") (Var "x") 
-    let assignXtoMemory1 = subst memory1 (Var lhs) post --  assign x to memory1 
-    --let kkt = and [pre, assignXtoMemory1]
-    return assignXtoMemory1
+  -- vcgen (LoadPtr array index expr) post = do -- LoadPtr "x" (Var "memory") (Var "ptr")
+  --   let pre = subst x (Store (Array x) expr expr) post -- x[ptr] = ptr
+  --   return pre
   
-  -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
-  vcgen (StorePtr lhs rhs) post = do -- ptr = pointer / expr = e
-   -- let pre = subst memory1 (Select (Array memory) (Var lhs)) post  -- Select (Store (Array "$memory") (Var "ptr") (Var "x")) (Var "ptr") -- stored in memory1
-    let pre = subst memory1 rhs post -- subst x with e (doesnt subsitute the X in pointer.js) instead of X there should be const 5
-    -- We need to somehow substitute the Var x in pointer.js, it works only with custom made x (check below memory1)
-    return pre
+  -- -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
+  -- vcgen (StorePtr lhs rhs) post = do -- StorePtr "ptr" (Const 5)
+  --   let pre = subst x (Store (Array x) (Var lhs) rhs) post -- x[ptr] = 5
+  --   return pre 
+
+  -- 2.
+  -- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
+  -- vcgen (LoadPtr lhs rhs) post = do -- LoadPtr "x" "ptr"
+  --   let pre = subst memory (Var rhs) post -- memory = Var "ptr"
+  --   return pre
+  
+  -- -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
+  -- vcgen (StorePtr lhs rhs) post = do -- StorePtr "ptr" (Const 5)
+  --   let pre = if (Var lhs) == (Var memory) -- Both memory and lhs = "ptr"
+  --          then subst x rhs post -- x = 5
+  --          else post
+  --   return pre 
+
+  -- 3.
+  -- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
+  -- vcgen (LoadPtr lhs rhs) post = do -- LoadPtr "x" "ptr"
+  --   let pre = subst memory (Store (Array memory) (Var rhs) (Var lhs)) post -- memory = Var "ptr"
+  --   return pre
+  
+  -- -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
+  -- vcgen (StorePtr lhs rhs) post = do -- StorePtr "ptr" (Const 5)
+  --   let searchMemory = Select (Array memory) (Var lhs)
+  --   let pre = if searchMemory == Select (Store (Array memory) (Var lhs) (Var x)) (Var lhs)
+  --           then subst x rhs post
+  --           else subst x searchMemory post
+  --   return pre 
+
+ -- 4.
+ -- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
+  -- vcgen (LoadPtr lhs rhs) post = do -- LoadPtr "x" "ptr"
+  --   let pre = subst memory (Store (Array memory) (Var rhs) (Var lhs)) post -- memory[ptr] = Var "x"
+  --   return pre
+  
+  -- -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
+  -- vcgen (StorePtr array index expr) post = do -- StorePtr "ptr" Var "x" (Const 5)
+  --   let pre = if (Var memory) == Store (Array memory) (Var array) (index) -- if (memory[ptr] = x) == (memory[ptr] = x)
+  --           then subst x expr post -- x = 5
+  --           else post
+  --   return pre 
+
+-- 5.
+-- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
+--   vcgen (LoadPtr lhs rhs) post = do -- LoadPtr "x" "ptr"
+--     let pre = subst memory (Store (Array memory) (Var rhs) (Var lhs)) post -- memory[ptr] = x
+--     return pre
+  
+-- -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
+--   vcgen (StorePtr array index expr) post = do -- StorePtr "ptr" Var "x" (Const 5)
+--     let searchMemory = Select (Array memory) (Var array) -- Select memory[ptr]
+--     let pre = if searchMemory == index -- if Select memory[ptr] == x
+--             then subst x expr post -- x = 5
+--             else subst x (Var memory) post
+--     return pre 
+
+-- 6.
+-- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
+--   vcgen (LoadPtr lhs rhs) post = do -- LoadPtr "x" "ptr"
+--     let pre = subst memory (Var lhs) post -- memory = x
+--     return pre
+  
+-- -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
+--   vcgen (StorePtr array index expr) post = do -- StorePtr "ptr" Var "x" (Const 5)
+--     let pre = if (Var memory) == index -- if memory == x
+--             then subst memory expr post -- x == 5
+--             else post
+--     return pre 
+
+-- 7.
+-- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
+  vcgen (LoadPtr lhs rhs) post = do -- LoadPtr "x" "ptr"
+    let pre = subst memory (Store (Array memory) (Var rhs) (Var lhs)) post -- memory[ptr] = x
+    return pre -- Store (Array "$memory") (Var "ptr") (Var "x")
+  
+-- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
+  vcgen (StorePtr array index expr) post = do -- StorePtr "ptr" Var "x" (Const 5)
+    let tmp = Store (Array memory) (Var array) expr -- memory[ptr] = 5 *or* Store (Array "memory") (Var "ptr") (Const 5)
+    let pre = if index == (Var x) -- if index of ptr == x
+            then subst x tmp post 
+            else post
+    return pre -- Store (Store (Array "$memory") (Var "ptr") (Var "x")) (Var "ptr") (Const 5)
+
+-- 8.
+-- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
+--   vcgen (LoadPtr lhs rhs) post = do -- LoadPtr "x" "ptr"
+--     let pre = subst memory (Var lhs) post -- memory = x
+--     return pre -- memory = x
+  
+-- -- Store (⊢{Q[μ⟨x◁e⟩/μ]} ∗x := e {Q})
+--   vcgen (StorePtr array index expr) post = do -- StorePtr "ptr" Var "x" (Const 5)
+--     let tmp = Store (Array memory) (Var array) expr -- x[ptr] = 5 *or* Store (Array "x") (Var "ptr") (Const 5)
+--     let pre = if index == (Var x) -- if index of ptr == x
+--             then subst x tmp post 
+--             else post
+--     return pre -- Store (Var "x") (Var "ptr") (Const 5)
 
 
  -- Catch statement
-  -- vcgen _ _ = return false
+ -- vcgen _ _ = return false
 
 instance VCGen Function where
   vcgen func post' = do

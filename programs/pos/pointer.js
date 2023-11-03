@@ -1,9 +1,7 @@
 function pointer() {
-    x[5] = 0; // expression
-    ptr[5] = 0; // pointer 
+    x >>= ptr; // mapping x to pointer ptr // x = *ptr
+    
+    ptr[x] <<= 5; // storing value 5 into ptr // *ptr = 5
 
-    x >>= ptr // mapping x to pointer ptr
-    ptr <<= 5; // storing value 5 into ptr
-
-    assert(x[5]==5);
+    assert(x==5);
 }
