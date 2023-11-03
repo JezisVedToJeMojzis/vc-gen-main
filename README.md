@@ -162,27 +162,44 @@ invariant(Q);
 invariant(R);
 ```
 
-## Grading
+## Extension for pointers (Final project)
 
-Your final grade corresponds directly to the one awarded to you by the test
-infrastructure. Do make sure your submission correctly executes on our online
-environment.
+### To simulate pointers in Javascript we decided to use:
 
-If there are issues with the submission system, don't panic! We will handle this
-on a case-by-case basis.
+OpAssignSpRShift - for referencing
+OpAssignLShift - for dereferencing
 
-If your uploaded submission somehow fail tests that work locally, ping
-us and we will have a look!
+### Tested JS code: 
+```
+function pointer() {
+    x >>= ptr; // mapping x to pointer ptr
+    
+    ptr[x] <<= 5; // storing value 5 into ptr
 
-If the online environment suddenly fails to work moments before the deadline,
-don't hesitate to send us your submission through different means (e.g. email).
+    assert(x==5);
+}
 
-## Plagiarism
+```
 
-We have a strict zero tolerance policy against plagiarism. Sadly, we find cases
-every year... This is not fun for you, nor us. Please, refrain from copying 
-and/or sharing your code with other groups.
 
-Since this is a group assignment, we expect that most of you will work together
-via Git. Do make sure to make your repository **private**! Sharing your code in
-this manner is sadly still plagiarism, even if unintentional.
+### Test script: 
+```
+check "programs/pos/pointer.js" 
+      [ Function
+        { fname = "pointer"
+        , fargs = []
+        , fpre = true
+        , fpost = true
+        , fmods = []
+        , fbody = Seq
+          [ 
+            LoadPtr "x" "ptr"
+          , StorePtr "ptr" (Var "x") (Const 5)
+          , Assert . Pred $ (Var "x") :==: (Const 5)
+          ]
+        }
+      ]
+}
+
+```
+
