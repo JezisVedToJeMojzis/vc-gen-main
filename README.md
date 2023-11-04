@@ -168,10 +168,10 @@ To run the code you can use stack test.
 
 ### To simulate pointers in Javascript we decided to use:
 
-- JS.OpAssignSpRShift - for referencing (>>=)
+- JS.OpAssignSpRShift - for referencing (>>=) (Load)
 
 
-- JS.OpAssignLShift - for dereferencing (<<=)
+- JS.OpAssignLShift - for dereferencing (<<=) (Store)
 
 ### Tested JS code: 
 Pointer ptr points to variable x. If 5 is assigned to ptr then it is assigned to x as well.
