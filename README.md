@@ -234,3 +234,5 @@ Which is equal to:
 **$memory[ptr] = 5**
 
 After substituting the variable x for array memory, we can see that the value 5 was mapped to x.
+
+**Note:** Our code contains quite a lot of **commented out code in the Nano.hs file**, we thought we would leave it in to illustrate the different approaches we tried (that did not end up working). Feel free to skip over those if needed.
