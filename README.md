@@ -205,4 +205,18 @@ check "programs/pos/pointer.js"
 }
 
 ```
+### Load
 
+After Loading pointer we get:
+*Store (Array "$memory") (Var "ptr") (Var "x")*
+
+Which is equal to:
+*$memory[ptr] = x*
+
+### Store 
+
+After Storing a value into pointer we get: 
+*Store (Store (Array "$memory") (Var "ptr") (Var "x")) (Var "ptr") (Const 5)*
+
+Which is equal to:
+*$memory[ptr] = 5*
