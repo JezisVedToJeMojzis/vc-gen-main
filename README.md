@@ -162,7 +162,9 @@ invariant(Q);
 invariant(R);
 ```
 
-## Extension for pointers (Final project)
+# Extension for pointers (Final project)
+
+## Parse (statement)
 
 ### To simulate pointers in Javascript we decided to use:
 
@@ -184,7 +186,6 @@ function pointer() {
 
 ```
 
-
 ### Test script: 
 ```
 check "programs/pos/pointer.js" 
@@ -205,12 +206,16 @@ check "programs/pos/pointer.js"
 }
 
 ```
+
+## Nano (vcgen)
+
 ### Load
 
 After Loading pointer we get:
 *Store (Array "$memory") (Var "ptr") (Var "x")*
 
-Which is equal to:
+Which is equal to:  
+
 *$memory[ptr] = x*
 
 ### Store 
@@ -218,5 +223,6 @@ Which is equal to:
 After Storing a value into pointer we get: 
 *Store (Store (Array "$memory") (Var "ptr") (Var "x")) (Var "ptr") (Const 5)*
 
-Which is equal to:
+Which is equal to:  
+
 *$memory[ptr] = 5*
