@@ -212,6 +212,8 @@ In Nano.hs we created a global array called *memory* where we collect needed inf
 ### Load
 
 After Loading pointer we get:
+
+
 *Store (Array "$memory") (Var "ptr") (Var "x")*
 
 Which is equal to:  
@@ -221,6 +223,8 @@ Which is equal to:
 ### Store 
 
 After Storing a value into pointer we get: 
+
+
 *Store (Store (Array "$memory") (Var "ptr") (Var "x")) (Var "ptr") (Const 5)*
 
 Which is equal to:  
