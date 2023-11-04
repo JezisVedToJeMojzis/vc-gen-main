@@ -168,18 +168,18 @@ To run the code you can use stack test.
 
 ### To simulate pointers in Javascript we decided to use:
 
-- JS.OpAssignSpRShift - for referencing (>>=) (Load)
+- JS.OpAssignSpRShift - for referencing (>>=) (LoadPtr)
 
 
-- JS.OpAssignLShift - for dereferencing (<<=) (Store)
+- JS.OpAssignLShift - for dereferencing (<<=) (StorePtr)
 
 ### Tested JS code: 
 Pointer ptr points to variable x. If 5 is assigned to ptr then it is assigned to x as well.
 ```
 function pointer() {
-    x >>= ptr; // mapping x to pointer ptr
+    x >>= ptr; // mapping x to pointer ptr (LoadPtr)
     
-    ptr[x] <<= 5; // storing value 5 into ptr
+    ptr[x] <<= 5; // storing value 5 into ptr (StorePtr)
 
     assert(x==5);
 }
@@ -211,7 +211,7 @@ check "programs/pos/pointer.js"
 In Nano.hs we created a global array called *memory* where we collect needed information. Our variable *x* in js code is then substituted for this array.
 ### Load
 
-After Loading pointer we get:
+After Loading pointer we substitute our global array for:
 
 
 **Store (Array "$memory") (Var "ptr") (Var "x")**
@@ -220,9 +220,11 @@ Which is equal to:
 
 **$memory[ptr] = x**
 
-### Store 
+Where $memory is name of our global array, ptr is name of the pointer and x is variable to which is the pointer pointing.
 
-After Storing a value into pointer we get: 
+### Store 
+Here we check our global array for index of the pointer.
+If the index is equal to pointer, we substitute the value (x) on that index and we get: 
 
 
 **Store (Store (Array "$memory") (Var "ptr") (Var "x")) (Var "ptr") (Const 5)**
