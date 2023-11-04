@@ -163,7 +163,7 @@ invariant(R);
 ```
 
 # Extension for pointers (Final project)
-
+To run the code you can use stack test.
 ## Parse (statement)
 
 ### To simulate pointers in Javascript we decided to use:
@@ -208,7 +208,7 @@ check "programs/pos/pointer.js"
 ```
 
 ## Nano (vcgen)
-
+In Nano.hs we created a global array called *memory* where we collect needed information. Our variable *x* in js code is then substituted for this array.
 ### Load
 
 After Loading pointer we get:
@@ -226,3 +226,5 @@ After Storing a value into pointer we get:
 Which is equal to:  
 
 *$memory[ptr] = 5*
+
+After substituting the variable x for array memory, we can see that the value 5 was mapped to x.
