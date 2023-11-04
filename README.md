@@ -214,21 +214,21 @@ In Nano.hs we created a global array called *memory* where we collect needed inf
 After Loading pointer we get:
 
 
-*Store (Array "$memory") (Var "ptr") (Var "x")*
+**Store (Array "$memory") (Var "ptr") (Var "x")**
 
 Which is equal to:  
 
-*$memory[ptr] = x*
+**$memory[ptr] = x**
 
 ### Store 
 
 After Storing a value into pointer we get: 
 
 
-*Store (Store (Array "$memory") (Var "ptr") (Var "x")) (Var "ptr") (Const 5)*
+**Store (Store (Array "$memory") (Var "ptr") (Var "x")) (Var "ptr") (Const 5)**
 
 Which is equal to:  
 
-*$memory[ptr] = 5*
+**$memory[ptr] = 5**
 
 After substituting the variable x for array memory, we can see that the value 5 was mapped to x.
