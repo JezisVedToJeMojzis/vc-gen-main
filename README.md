@@ -181,7 +181,7 @@ function pointer() {
     
     ptr[x] <<= 5; // storing value 5 into ptr (StorePtr)
 
-    assert(x==5);
+    assert(x==5); // x should be 5
 }
 
 ```
