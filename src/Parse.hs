@@ -89,7 +89,7 @@ getStringFromJSLValue _ = "skip "
 
 jsExpressionToString :: JS.Expression a -> String
 jsExpressionToString (JS.StringLit _ str) = str
-jsExpressionToString _ = "/* Unsupported Expression */"
+jsExpressionToString _ = "Unsupported expression"
 
 exprToString :: Expr String -> String
 exprToString (Var str) = str
@@ -123,11 +123,26 @@ statement (ReturnStmt expression) = do -- ReturnStmt a (Maybe (Expression a)) //
 --       rhs'' <- expr rhs
 --       return $ StorePtr var rhs'' 
 
--- For array ptr
+-- statement (JS.ExprStmt _ (JS.AssignExpr _ op var rhs)) = do
+--     case op of
+--         JS.OpAssignSpRShift -> do -- >>=
+--             rhs' <- expr rhs
+--             return $ LoadPtr (getStringFromJSLValue var) (exprToString rhs')
+--         JS.OpAssignLShift -> do -- <<=
+--             rhs' <- expr rhs
+--             return $ StorePtr (getStringFromJSLValue var) rhs'
+--         -- JS.OpAssign -> do -- =
+--         --     rhs' <- expr rhs
+--         --     return $ Assign (getStringFromJSLValue var) rhs'
+--         _ -> return skip
+
+
+-- Official pointers
 -- LOAD (>>=)
-statement (LoadStmt' lhs rhs) = do 
+statement (ArrLoadStmt lhs rhs index) = do 
+  index' <- expr index
   rhs' <- expr rhs
-  return (LoadPtr (getStringFromJSLValue lhs) (exprToString rhs'))
+  return (LoadPtr (getStringFromJSLValue lhs) (exprToString rhs') index') -- this needs to be fixed for x = ptr[x]
 
 -- STORE (<<=)
 statement (ArrStoreStmt array index rhs) = do 
@@ -158,22 +173,7 @@ statement (ArrAsnStmt array index rhs) = do
   index' <- expr index
   rhs' <- expr rhs
   return (ArrAsn array index' rhs')
-
--- Pointers
--- statement (JS.ExprStmt _ (JS.AssignExpr _ op var rhs)) = do
---     case op of
---         JS.OpAssignSpRShift -> do -- >>=
---             rhs' <- expr rhs
---             return $ LoadPtr (getStringFromJSLValue var) (exprToString rhs')
---         JS.OpAssignLShift -> do -- <<=
---             rhs' <- expr rhs
---             return $ StorePtr (getStringFromJSLValue var) rhs'
---         -- JS.OpAssign -> do -- =
---         --     rhs' <- expr rhs
---         --     return $ Assign (getStringFromJSLValue var) rhs'
---         _ -> return skip
-    
-  
+ 
 -- Variable declaration
 statement (DeclStmt [Decl var stmt]) = do -- VarDeclStmt a [VarDecl a]	// var x, y=42;, spec 12.2
   stmt' <- expr stmt -- apply helpWDecl fun to each decl
@@ -484,6 +484,7 @@ pattern ReturnStmt expr <- JS.ReturnStmt _ (Just expr)
 pattern AssignStmt' :: JS.LValue a -> JS.Expression a -> JS.Statement a
 pattern AssignStmt' lhs rhs <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssign lhs rhs)
 
+-- FOR LOAD AND STORE 
 pattern ArrStoreStmt :: String -> JS.Expression a -> JS.Expression a -> JS.Statement a
 pattern ArrStoreStmt array index rhs <- StoreStmt' (JS.LBracket _ (Variable array) index) rhs
 
@@ -493,9 +494,12 @@ pattern StoreStmt' lhs rhs <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssignLShift l
 pattern LoadStmt' :: JS.LValue a -> JS.Expression a -> JS.Statement a
 pattern LoadStmt' lhs rhs <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssignSpRShift lhs rhs)
 
+pattern ArrLoadStmt :: JS.LValue a -> JS.Expression a -> JS.Expression a -> JS.Statement a
+pattern ArrLoadStmt lhs array index <- LoadStmt' lhs (JS.LBracket _ (JS.LValueExpression (JS.LBracket _ (JS.LValueExpression (JS.LVar _ array)) index))) -- x = ptr[x]
+
+
 -- pattern DiffOpAssign :: JS.LValue a -> JS.Expression a -> JS.Statement a
 -- pattern DiffOpAssign lhs rhs <- JS.ExprStmt _ (JS.AssignExpr _ JS.OpAssignSpRShift lhs rhs)
-
 
 
 -- | You still have to distinguish between an expression or function call on

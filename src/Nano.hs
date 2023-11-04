@@ -65,7 +65,7 @@ data Statement a
   -- ^ x := f(e0, .., eN)
   | Havoc a
   -- ^ havoc
-  | LoadPtr a  a
+  | LoadPtr a  a (Expr a)
   -- ^ y := *x (load) 
   | StorePtr a (Expr a) (Expr a)
   -- ^ *x := e (store)
@@ -305,7 +305,7 @@ instance VCGen Statement where
 
 -- 7.
 -- Load (⊢{Q[μ[y]/x]} x:= ∗y{Q})
-  vcgen (LoadPtr lhs rhs) post = do -- LoadPtr "x" "ptr"
+  vcgen (LoadPtr lhs rhs index) post = do -- LoadPtr "x" "ptr"
     let pre = subst memory (Store (Array memory) (Var rhs) (Var lhs)) post -- memory[ptr] = x
     return pre -- Store (Array "$memory") (Var "ptr") (Var "x")
   
